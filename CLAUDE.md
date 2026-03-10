@@ -15,11 +15,14 @@ cmd.exe /c start "" "<game>.html"
 
 ## Git workflow
 
-This repo uses Git with a remote on GitHub (`origin/master`). After every meaningful change:
+This repo uses Git with a remote on GitHub (`origin/master`). **Commit and push frequently** — after every meaningful unit of work — so progress is never lost and any change can be reverted cleanly.
 
+Rules:
 1. Stage only the relevant file(s) by name (never `git add .`)
 2. Write a concise, imperative commit message describing *what changed and why*
-3. Push immediately: `git push`
+3. Push immediately after every commit: `git push`
+4. Never batch up multiple unrelated changes into one commit
+5. If a feature is built incrementally, commit each working milestone separately rather than waiting until the end
 
 ## Architecture pattern
 
