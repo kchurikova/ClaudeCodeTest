@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Snake — 70s Retro</title>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0d0500;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-family: 'Press Start 2P', monospace;
+      color: #f5c842;
+    }
+
+    h1 {
+      font-size: 14px;
+      letter-spacing: 4px;
+      color: #f5c842;
+      text-shadow: 0 0 12px #f5c842aa;
+      margin-bottom: 16px;
+    }
+
+    #score-display {
+      font-size: 10px;
+      color: #f5c842;
+      margin-bottom: 10px;
+      text-shadow: 0 0 8px #f5c84288;
+      min-height: 18px;
+    }
+
+    /* Retro TV wrapper */
+    #tv-frame {
+      position: relative;
+      background: linear-gradient(145deg, #3a1f00, #1a0a00, #2e1500, #1a0a00);
+      border-radius: 24px;
+      padding: 20px;
+      box-shadow:
+        0 0 0 4px #5c3300,
+        0 0 0 8px #3a1f00,
+        0 0 40px #e8650a55,
+        0 0 80px #e8650a22,
+        inset 0 0 20px #00000088;
+    }
+
+    #canvas-wrapper {
+      position: relative;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow:
+        0 0 20px #6b8c4244,
+        0 0 40px #6b8c4222,
+        inset 0 0 10px #00000066;
+    }
+
+    #gameCanvas {
+      display: block;
+      background: #1a0a00;
+    }
+
+    /* CRT scanlines overlay */
+    #scanlines {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: repeating-linear-gradient(
+        to bottom,
+        transparent 0px,
+        transparent 3px,
+        rgba(0, 0, 0, 0.18) 3px,
+        rgba(0, 0, 0, 0.18) 4px
+      );
+      pointer-events: none;
+      border-radius: 8px;
+      z-index: 10;
+    }
+
+    /* CRT vignette */
+    #vignette {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.55) 100%);
+      pointer-events: none;
+      border-radius: 8px;
+      z-index: 11;
+    }
+
+    #instructions {
+      margin-top: 14px;
+      font-size: 7px;
+      color: #a87820;
+      text-align: center;
+      line-height: 2;
+      letter-spacing: 1px;
+    }
+
+    /* Food pulse animation — applied via canvas glow, but also drives a JS variable */
+    @keyframes foodPulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>&#x25BA; SNAKE &#x25C4;</h1>
+  <div id="score-display">SCORE: 0</div>
+
+  <div id="tv-frame">
+    <div id="canvas-wrapper">
+      <canvas id="gameCanvas" width="480" height="480"></canvas>
+      <div id="scanlines"></div>
+      <div id="vignette"></div>
+    </div>
+  </div>
+
+  <div id="instructions">
+    ARROW KEYS — MOVE &nbsp;|&nbsp; ENTER / CLICK — START / RESTART
+  </div>
+
+<script>
+(function() {
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  const scoreDisplay = document.getElementById('score-display');
+
+  const COLS = 20;
+  const ROWS = 20;
+  const CELL = 24; // px
+  const TICK = 150; // ms
+
+  // Colors
+  const C_BG       = '#1a0a00';
+  const C_GRID     = '#2a1200';
+  const C_SNAKE    = '#6b8c42';
+  const C_HEAD     = '#9dc840';
+  const C_FOOD     = '#e8650a';
+  const C_TEXT     = '#f5c842';
+  const C_OVERLAY  = 'rgba(26, 10, 0, 0.82)';
+
+  // State
+  let snake, dir, nextDir, food, score, gameOver, started;
+  let loopId = null;
+  let foodPulse = 0; // 0–1 oscillating
+
+  function initState() {
+    snake = [
+      { x: 10, y: 10 },
+      { x:  9, y: 10 },
+      { x:  8, y: 10 },
+    ];
+    dir     = { x: 1, y: 0 };
+    nextDir = { x: 1, y: 0 };
+    score   = 0;
+    gameOver = false;
+    spawnFood();
+    updateScoreDisplay();
+  }
+
+  function spawnFood() {
+    const occupied = new Set(snake.map(s => `${s.x},${s.y}`));
+    let pos;
+    do {
+      pos = { x: Math.floor(Math.random() * COLS), y: Math.floor(Math.random() * ROWS) };
+    } while (occupied.has(`${pos.x},${pos.y}`));
+    food = pos;
+  }
+
+  function updateScoreDisplay() {
+    scoreDisplay.textContent = 'SCORE: ' + score;
+  }
+
+  // ── Game loop ──────────────────────────────────────────────────────────────
+  function tick() {
+    if (gameOver) return;
+
+    dir = { ...nextDir };
+
+    const head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
+
+    // Wall collision
+    if (head.x < 0 || head.x >= COLS || head.y < 0 || head.y >= ROWS) {
+      triggerGameOver(); return;
+    }
+
+    // Self collision (skip tail tip — it will move)
+    for (let i = 0; i < snake.length - 1; i++) {
+      if (snake[i].x === head.x && snake[i].y === head.y) {
+        triggerGameOver(); return;
+      }
+    }
+
+    const ate = head.x === food.x && head.y === food.y;
+
+    // Move snake
+    snake.unshift(head);
+    if (ate) {
+      score++;
+      updateScoreDisplay();
+      spawnFood();
+    } else {
+      snake.pop();
+    }
+
+    draw();
+  }
+
+  function triggerGameOver() {
+    gameOver = true;
+    clearInterval(loopId);
+    loopId = null;
+    draw();
+  }
+
+  // ── Rendering ──────────────────────────────────────────────────────────────
+  function draw() {
+    // Background
+    ctx.fillStyle = C_BG;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Grid lines
+    ctx.strokeStyle = C_GRID;
+    ctx.lineWidth = 0.5;
+    for (let x = 0; x <= COLS; x++) {
+      ctx.beginPath();
+      ctx.moveTo(x * CELL, 0);
+      ctx.lineTo(x * CELL, canvas.height);
+      ctx.stroke();
+    }
+    for (let y = 0; y <= ROWS; y++) {
+      ctx.beginPath();
+      ctx.moveTo(0, y * CELL);
+      ctx.lineTo(canvas.width, y * CELL);
+      ctx.stroke();
+    }
+
+    // Food — circle with pulsing glow
+    const pulse = 0.5 + 0.5 * Math.sin(foodPulse);
+    const fx = food.x * CELL + CELL / 2;
+    const fy = food.y * CELL + CELL / 2;
+    const glowRadius = 8 + pulse * 6;
+
+    ctx.save();
+    ctx.shadowColor = C_FOOD;
+    ctx.shadowBlur = 6 + pulse * 14;
+    ctx.fillStyle = C_FOOD;
+    ctx.beginPath();
+    ctx.arc(fx, fy, CELL / 2 - 3, 0, Math.PI * 2);
+    ctx.fill();
+    // Highlight dot
+    ctx.fillStyle = `rgba(255,200,100,${0.3 + pulse * 0.4})`;
+    ctx.beginPath();
+    ctx.arc(fx - 3, fy - 3, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // Snake segments
+    for (let i = snake.length - 1; i >= 0; i--) {
+      const seg = snake[i];
+      const isHead = i === 0;
+      const color = isHead ? C_HEAD : C_SNAKE;
+      const px = seg.x * CELL;
+      const py = seg.y * CELL;
+      const pad = 2;
+
+      ctx.save();
+      if (isHead) {
+        ctx.shadowColor = C_HEAD;
+        ctx.shadowBlur = 8;
+      }
+      ctx.fillStyle = color;
+      roundRect(ctx, px + pad, py + pad, CELL - pad * 2, CELL - pad * 2, 4);
+      ctx.fill();
+
+      // Segment sheen
+      ctx.fillStyle = isHead ? 'rgba(255,255,200,0.18)' : 'rgba(255,255,200,0.07)';
+      roundRect(ctx, px + pad, py + pad, CELL - pad * 2, (CELL - pad * 2) / 2, 4);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // Eyes on head
+    drawEyes();
+
+    // Overlay screens
+    if (!started) {
+      drawStartScreen();
+    } else if (gameOver) {
+      drawGameOverScreen();
+    }
+  }
+
+  function drawEyes() {
+    if (!snake.length) return;
+    const head = snake[0];
+    const cx = head.x * CELL + CELL / 2;
+    const cy = head.y * CELL + CELL / 2;
+    const d = dir;
+
+    // Offset eyes perpendicular to direction
+    const perp = { x: -d.y, y: d.x };
+    const eyeOffset = 4;
+    const eyeForward = 3;
+
+    const e1x = cx + perp.x * eyeOffset + d.x * eyeForward;
+    const e1y = cy + perp.y * eyeOffset + d.y * eyeForward;
+    const e2x = cx - perp.x * eyeOffset + d.x * eyeForward;
+    const e2y = cy - perp.y * eyeOffset + d.y * eyeForward;
+
+    ctx.fillStyle = '#1a0a00';
+    ctx.beginPath(); ctx.arc(e1x, e1y, 2.5, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(e2x, e2y, 2.5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(e1x - 0.5, e1y - 0.5, 1, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(e2x - 0.5, e2y - 0.5, 1, 0, Math.PI * 2); ctx.fill();
+  }
+
+  function drawStartScreen() {
+    ctx.fillStyle = C_OVERLAY;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.save();
+    ctx.shadowColor = C_TEXT;
+    ctx.shadowBlur = 16;
+    ctx.fillStyle = C_TEXT;
+    ctx.font = '28px "Press Start 2P", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('SNAKE', canvas.width / 2, canvas.height / 2 - 40);
+    ctx.restore();
+
+    ctx.fillStyle = '#a87820';
+    ctx.font = '8px "Press Start 2P", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('PRESS ENTER OR CLICK', canvas.width / 2, canvas.height / 2 + 10);
+    ctx.fillText('TO START', canvas.width / 2, canvas.height / 2 + 30);
+
+    ctx.fillStyle = '#6b4010';
+    ctx.font = '7px "Press Start 2P", monospace';
+    ctx.fillText('\u00a9 1978  RETRO GAMES INC.', canvas.width / 2, canvas.height / 2 + 70);
+  }
+
+  function drawGameOverScreen() {
+    ctx.fillStyle = C_OVERLAY;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.save();
+    ctx.shadowColor = '#e8650a';
+    ctx.shadowBlur = 20;
+    ctx.fillStyle = '#e8650a';
+    ctx.font = '18px "Press Start 2P", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2 - 40);
+    ctx.restore();
+
+    ctx.fillStyle = C_TEXT;
+    ctx.font = '10px "Press Start 2P", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('SCORE: ' + score, canvas.width / 2, canvas.height / 2);
+
+    ctx.fillStyle = '#a87820';
+    ctx.font = '7px "Press Start 2P", monospace';
+    ctx.fillText('PRESS ENTER OR CLICK', canvas.width / 2, canvas.height / 2 + 36);
+    ctx.fillText('TO RESTART', canvas.width / 2, canvas.height / 2 + 54);
+  }
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  }
+
+  // ── Animation frame for food pulse ────────────────────────────────────────
+  let lastRaf = 0;
+  function animLoop(ts) {
+    foodPulse += (ts - lastRaf) / 600; // full cycle ~600ms*2π ≈ 3.77s
+    lastRaf = ts;
+    if (!gameOver && started) {
+      // Redraw just the food glow without re-running game logic
+      // (tick handles full redraws; here we just keep pulse alive between ticks)
+    }
+    requestAnimationFrame(animLoop);
+  }
+  requestAnimationFrame(ts => { lastRaf = ts; requestAnimationFrame(animLoop); });
+
+  // ── Controls ───────────────────────────────────────────────────────────────
+  function startGame() {
+    if (loopId) clearInterval(loopId);
+    initState();
+    started = true;
+    draw();
+    loopId = setInterval(tick, TICK);
+  }
+
+  document.addEventListener('keydown', e => {
+    if (!started || gameOver) {
+      if (e.key === 'Enter') { startGame(); return; }
+    }
+    if (gameOver) return;
+    switch (e.key) {
+      case 'ArrowUp':    if (dir.y !== 1)  nextDir = { x: 0, y: -1 }; e.preventDefault(); break;
+      case 'ArrowDown':  if (dir.y !== -1) nextDir = { x: 0, y:  1 }; e.preventDefault(); break;
+      case 'ArrowLeft':  if (dir.x !== 1)  nextDir = { x: -1, y: 0 }; e.preventDefault(); break;
+      case 'ArrowRight': if (dir.x !== -1) nextDir = { x:  1, y: 0 }; e.preventDefault(); break;
+    }
+  });
+
+  canvas.addEventListener('click', () => {
+    if (!started || gameOver) startGame();
+  });
+
+  // ── Init ───────────────────────────────────────────────────────────────────
+  started = false;
+  gameOver = false;
+  // Minimal state so draw() doesn't crash on start screen
+  snake = [{ x: 10, y: 10 }];
+  dir = { x: 1, y: 0 };
+  food = { x: 15, y: 10 };
+  score = 0;
+  draw();
+
+})();
+</script>
+</body>
+</html>
