@@ -1,0 +1,1776 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WiBe 5.0 — Wirtschaftlichkeitsbetrachtung</title>
+<style>
+/*
+ * WiBe 5.0 Rechner — "Bundesamt Professional" Theme
+ *
+ * Palette:
+ *   Background:    #f5f5f5 (light grey)
+ *   Cards:         #ffffff
+ *   Primary:       #004B87 (Bundesblau)
+ *   Primary-light: #e8f0f8
+ *   Danger/Neg:    #C8102E
+ *   Success/Pos:   #006341
+ *   Warning:       #e6a817
+ *   Text:          #1a1a1a
+ *   Muted:         #6c757d
+ *   Border:        #dee2e6
+ *   Font:          'Segoe UI', Arial, sans-serif
+ */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { font-size: 15px; }
+
+body {
+  font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  background: #f5f5f5;
+  color: #1a1a1a;
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+/* ---- HEADER ---- */
+#app-header {
+  background: #004B87;
+  color: #fff;
+  padding: 1rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+#app-header h1 { font-size: 1.4rem; font-weight: 600; letter-spacing: 0.02em; }
+#app-header .subtitle { font-size: 0.85rem; opacity: 0.85; margin-top: 2px; }
+#app-header .header-actions { display: flex; gap: 0.5rem; }
+#app-header .header-actions button {
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.3);
+  padding: 0.4rem 0.9rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.82rem;
+  transition: background 0.2s;
+}
+#app-header .header-actions button:hover { background: rgba(255,255,255,0.25); }
+
+/* ---- WIZARD NAV ---- */
+#wizard-nav {
+  background: #fff;
+  border-bottom: 1px solid #dee2e6;
+  padding: 0.8rem 2rem;
+  display: flex;
+  gap: 0.25rem;
+  overflow-x: auto;
+}
+.wiz-step {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: #6c757d;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+}
+.wiz-step:hover { background: #f0f0f0; }
+.wiz-step.active { background: #e8f0f8; color: #004B87; font-weight: 600; border-color: #004B87; }
+.wiz-step.completed { color: #006341; }
+.wiz-step .step-num {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; border-radius: 50%;
+  background: #dee2e6; color: #6c757d;
+  font-size: 0.78rem; font-weight: 700; flex-shrink: 0;
+}
+.wiz-step.active .step-num { background: #004B87; color: #fff; }
+.wiz-step.completed .step-num { background: #006341; color: #fff; }
+.wiz-step-arrow { color: #ccc; font-size: 0.7rem; margin: 0 0.15rem; }
+
+/* ---- MAIN CONTENT ---- */
+#app-content {
+  max-width: 1100px;
+  margin: 1.5rem auto;
+  padding: 0 1.5rem;
+}
+
+/* ---- CARDS ---- */
+.card {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  padding: 1.5rem;
+  margin-bottom: 1.2rem;
+}
+.card h2 { font-size: 1.15rem; color: #004B87; margin-bottom: 0.3rem; }
+.card h3 { font-size: 1rem; color: #004B87; margin-bottom: 0.3rem; }
+.card .help-text { font-size: 0.82rem; color: #6c757d; margin-bottom: 1rem; line-height: 1.5; }
+
+/* ---- FORMS ---- */
+.form-group { margin-bottom: 1rem; }
+.form-group label {
+  display: block; font-weight: 600; font-size: 0.88rem;
+  margin-bottom: 0.3rem; color: #1a1a1a;
+}
+.form-group .label-hint {
+  font-weight: 400; font-size: 0.78rem; color: #6c757d; margin-left: 0.3rem;
+}
+.form-group input[type="text"],
+.form-group input[type="number"],
+.form-group input[type="date"],
+.form-group textarea,
+.form-group select {
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid #ced4da;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+.form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+  outline: none; border-color: #004B87; box-shadow: 0 0 0 3px rgba(0,75,135,0.12);
+}
+.form-group textarea { resize: vertical; min-height: 80px; }
+.form-row { display: flex; gap: 1rem; }
+.form-row .form-group { flex: 1; }
+.form-group .error-msg { color: #C8102E; font-size: 0.78rem; margin-top: 0.2rem; }
+.form-group input.invalid { border-color: #C8102E; }
+
+/* ---- BUTTONS ---- */
+.btn {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  padding: 0.55rem 1.2rem; border-radius: 6px; font-size: 0.88rem;
+  font-weight: 600; cursor: pointer; border: 1px solid transparent;
+  transition: all 0.2s; font-family: inherit;
+}
+.btn-primary { background: #004B87; color: #fff; }
+.btn-primary:hover { background: #003a6b; }
+.btn-secondary { background: #fff; color: #004B87; border-color: #004B87; }
+.btn-secondary:hover { background: #e8f0f8; }
+.btn-sm { padding: 0.35rem 0.8rem; font-size: 0.8rem; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.nav-buttons { display: flex; justify-content: space-between; margin-top: 1.5rem; }
+
+/* ---- TOGGLE ---- */
+.toggle-group {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.8rem 1rem; border: 1px solid #dee2e6; border-radius: 8px;
+  margin-bottom: 0.6rem; transition: background 0.2s;
+}
+.toggle-group:hover { background: #fafafa; }
+.toggle-group .toggle-label { flex: 1; font-size: 0.88rem; }
+.toggle-group .toggle-desc { font-size: 0.78rem; color: #6c757d; margin-top: 0.2rem; }
+.toggle-btns { display: flex; gap: 0; flex-shrink: 0; }
+.toggle-btns button {
+  padding: 0.3rem 0.8rem; border: 1px solid #ced4da; background: #fff;
+  font-size: 0.8rem; cursor: pointer; font-family: inherit; color: #6c757d;
+}
+.toggle-btns button:first-child { border-radius: 6px 0 0 6px; }
+.toggle-btns button:last-child { border-radius: 0 6px 6px 0; border-left: 0; }
+.toggle-btns button.active-yes { background: #006341; color: #fff; border-color: #006341; }
+.toggle-btns button.active-no { background: #C8102E; color: #fff; border-color: #C8102E; }
+
+/* ---- CRITERIA TREE ---- */
+.criteria-group { margin-bottom: 1rem; }
+.criteria-group-header {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.6rem 0.8rem; background: #e8f0f8; border-radius: 6px;
+  font-weight: 600; font-size: 0.9rem; color: #004B87;
+  cursor: pointer; margin-bottom: 0.4rem;
+}
+.criteria-group-header .badge {
+  background: #004B87; color: #fff; border-radius: 10px;
+  padding: 0.1rem 0.5rem; font-size: 0.72rem; margin-left: auto;
+}
+.criteria-item {
+  display: flex; align-items: flex-start; gap: 0.5rem;
+  padding: 0.5rem 0.8rem 0.5rem 2rem; font-size: 0.85rem;
+}
+.criteria-item input[type="checkbox"] { margin-top: 0.2rem; accent-color: #004B87; }
+.criteria-item label { cursor: pointer; }
+.criteria-item .crit-id { color: #6c757d; font-size: 0.78rem; min-width: 60px; }
+.criteria-actions { display: flex; gap: 0.5rem; margin-bottom: 0.5rem; padding-left: 0.8rem; }
+
+/* ---- TABS ---- */
+.tab-bar { display: flex; gap: 0; border-bottom: 2px solid #dee2e6; margin-bottom: 1rem; }
+.tab-btn {
+  padding: 0.5rem 1rem; border: none; background: none; cursor: pointer;
+  font-size: 0.85rem; color: #6c757d; font-family: inherit; font-weight: 500;
+  border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.2s;
+}
+.tab-btn:hover { color: #004B87; }
+.tab-btn.active { color: #004B87; border-bottom-color: #004B87; font-weight: 600; }
+
+/* ---- MONETARY TABLE ---- */
+.monetary-table-wrap { overflow-x: auto; margin-bottom: 1rem; }
+.monetary-table {
+  width: 100%; border-collapse: collapse; font-size: 0.8rem;
+}
+.monetary-table th, .monetary-table td {
+  padding: 0.4rem 0.5rem; border: 1px solid #dee2e6; text-align: right;
+}
+.monetary-table th {
+  background: #e8f0f8; color: #004B87; font-weight: 600;
+  position: sticky; top: 0; text-align: center;
+}
+.monetary-table td:first-child, .monetary-table th:first-child { text-align: left; }
+.monetary-table .row-label { min-width: 180px; font-weight: 500; }
+.monetary-table .sub-label { padding-left: 1.5rem; font-weight: 400; color: #6c757d; font-size: 0.75rem; }
+.monetary-table input[type="number"] {
+  width: 100px; padding: 0.25rem 0.35rem; border: 1px solid #ced4da;
+  border-radius: 4px; font-size: 0.8rem; text-align: right; font-family: inherit;
+}
+.monetary-table input[type="number"]:focus {
+  outline: none; border-color: #004B87; box-shadow: 0 0 0 2px rgba(0,75,135,0.12);
+}
+.monetary-table .total-row { background: #f8f9fa; font-weight: 700; }
+.monetary-table .risk-input {
+  width: 60px; color: #C8102E;
+}
+
+/* ---- QUALITATIVE CRITERION ---- */
+.qual-criterion {
+  border: 1px solid #dee2e6; border-radius: 8px; padding: 1rem;
+  margin-bottom: 1rem;
+}
+.qual-criterion.key-criterion { border-color: #e6a817; border-width: 2px; }
+.qual-criterion .qual-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+.qual-criterion .qual-id { font-size: 0.78rem; color: #6c757d; }
+.qual-criterion .qual-title { font-weight: 600; font-size: 0.95rem; }
+.qual-criterion .qual-weight {
+  background: #e8f0f8; color: #004B87; padding: 0.15rem 0.5rem;
+  border-radius: 10px; font-size: 0.75rem; font-weight: 600;
+}
+.qual-criterion .qual-desc { font-size: 0.82rem; color: #6c757d; margin-bottom: 0.8rem; line-height: 1.5; }
+.qual-criterion .key-badge {
+  background: #e6a817; color: #fff; padding: 0.15rem 0.6rem;
+  border-radius: 10px; font-size: 0.72rem; font-weight: 600; margin-left: 0.5rem;
+}
+.score-row {
+  display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem;
+}
+.score-row label { font-weight: 600; font-size: 0.85rem; white-space: nowrap; }
+.score-row input[type="range"] { flex: 1; accent-color: #004B87; }
+.score-row .score-val {
+  background: #004B87; color: #fff; padding: 0.2rem 0.6rem;
+  border-radius: 6px; font-weight: 700; font-size: 0.9rem; min-width: 36px; text-align: center;
+}
+.score-row .weighted-val { font-size: 0.82rem; color: #6c757d; }
+.scale-desc {
+  font-size: 0.78rem; color: #004B87; background: #e8f0f8;
+  padding: 0.4rem 0.7rem; border-radius: 6px; margin-bottom: 0.5rem; min-height: 1.5em;
+}
+.qual-criterion textarea {
+  width: 100%; padding: 0.4rem 0.6rem; border: 1px solid #ced4da;
+  border-radius: 6px; font-size: 0.82rem; font-family: inherit;
+  resize: vertical; min-height: 50px;
+}
+
+/* ---- RESULTS ---- */
+.results-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+.result-card {
+  background: #fff; border-radius: 8px; padding: 1.2rem;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08); text-align: center;
+  border-top: 4px solid #dee2e6;
+}
+.result-card.positive { border-top-color: #006341; }
+.result-card.negative { border-top-color: #C8102E; }
+.result-card.neutral { border-top-color: #e6a817; }
+.result-card .rc-label { font-size: 0.82rem; color: #6c757d; margin-bottom: 0.3rem; }
+.result-card .rc-value { font-size: 1.6rem; font-weight: 700; }
+.result-card .rc-value.pos { color: #006341; }
+.result-card .rc-value.neg { color: #C8102E; }
+.result-card .rc-sub { font-size: 0.75rem; color: #6c757d; margin-top: 0.3rem; }
+
+.decision-box {
+  border-radius: 8px; padding: 1.2rem; margin-bottom: 1.5rem;
+  border-left: 5px solid;
+}
+.decision-box.positive { background: #e6f4ea; border-color: #006341; }
+.decision-box.negative { background: #fce8e8; border-color: #C8102E; }
+.decision-box.conditional { background: #fff8e1; border-color: #e6a817; }
+.decision-box h3 { margin-bottom: 0.5rem; }
+.decision-box p { font-size: 0.88rem; line-height: 1.5; }
+
+.bar-chart-container { margin-bottom: 1.5rem; }
+.bar-chart-container canvas { width: 100%; height: 300px; }
+
+.score-bar-wrap { margin-bottom: 0.8rem; }
+.score-bar-label { font-size: 0.82rem; font-weight: 500; margin-bottom: 0.2rem; display: flex; justify-content: space-between; }
+.score-bar-track { height: 20px; background: #e9ecef; border-radius: 10px; overflow: hidden; }
+.score-bar-fill { height: 100%; border-radius: 10px; transition: width 0.5s ease; }
+.score-bar-fill.good { background: #006341; }
+.score-bar-fill.mid { background: #e6a817; }
+.score-bar-fill.low { background: #C8102E; }
+
+/* ---- DETAIL TABLE (Results) ---- */
+.detail-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin-bottom: 1rem; }
+.detail-table th, .detail-table td { padding: 0.5rem 0.6rem; border: 1px solid #dee2e6; }
+.detail-table th { background: #e8f0f8; color: #004B87; font-weight: 600; text-align: center; }
+.detail-table td { text-align: right; }
+.detail-table td:first-child { text-align: left; font-weight: 500; }
+.detail-table .total-row { background: #f8f9fa; font-weight: 700; }
+
+/* ---- RUNNING TOTAL ---- */
+.running-total {
+  background: #e8f0f8; padding: 0.7rem 1rem; border-radius: 6px;
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 0.9rem; font-weight: 600; color: #004B87;
+}
+
+/* ---- TOOLTIP ---- */
+.info-tip {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 16px; height: 16px; border-radius: 50%; background: #6c757d;
+  color: #fff; font-size: 0.65rem; font-weight: 700; cursor: help;
+  margin-left: 0.3rem; position: relative;
+}
+.info-tip:hover::after {
+  content: attr(data-tip); position: absolute; bottom: 120%; left: 50%;
+  transform: translateX(-50%); background: #1a1a1a; color: #fff;
+  padding: 0.4rem 0.7rem; border-radius: 6px; font-size: 0.75rem;
+  font-weight: 400; white-space: nowrap; max-width: 300px; white-space: normal;
+  z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+/* ---- FOOTER ---- */
+#app-footer {
+  text-align: center; padding: 1rem; color: #6c757d;
+  font-size: 0.78rem; margin-top: 2rem;
+}
+
+/* ---- PRINT ---- */
+@media print {
+  body { background: #fff; font-size: 11pt; }
+  #app-header { background: #004B87 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  #wizard-nav, .nav-buttons, #app-footer, .header-actions, .btn { display: none !important; }
+  #app-content { max-width: 100%; margin: 0; padding: 1cm; }
+  .card { box-shadow: none; border: 1px solid #dee2e6; page-break-inside: avoid; }
+  .result-card { border-top: 4px solid !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .decision-box { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .monetary-table-wrap { overflow: visible; }
+  .print-section { display: block !important; }
+}
+.print-section { display: none; }
+
+/* ---- MISC ---- */
+.text-muted { color: #6c757d; }
+.text-danger { color: #C8102E; }
+.text-success { color: #006341; }
+.mt-1 { margin-top: 0.5rem; }
+.mb-1 { margin-bottom: 0.5rem; }
+.flex-between { display: flex; justify-content: space-between; align-items: center; }
+</style>
+</head>
+<body>
+
+<header id="app-header">
+  <div>
+    <h1>WiBe 5.0 Rechner</h1>
+    <div class="subtitle">Wirtschaftlichkeitsbetrachtung f&uuml;r die Bundesverwaltung</div>
+  </div>
+  <div class="header-actions">
+    <button onclick="WiBe.exportJSON()" title="Projekt als JSON-Datei speichern">&#128190; Exportieren</button>
+    <button onclick="WiBe.importJSON()" title="Projekt aus JSON-Datei laden">&#128194; Importieren</button>
+    <button onclick="window.print()" title="Druckansicht">&#128424; Drucken</button>
+  </div>
+</header>
+
+<nav id="wizard-nav"></nav>
+
+<main id="app-content"></main>
+
+<footer id="app-footer">
+  WiBe 5.0 Rechner &mdash; basierend auf dem Fachkonzept zur Durchf&uuml;hrung von Wirtschaftlichkeitsbetrachtungen in der Bundesverwaltung (Version 5.0, 2014)
+</footer>
+
+<input type="file" id="file-import" accept=".json" style="display:none">
+
+<script>
+// ============================================================
+// WiBe 5.0 Rechner — Gesamte Anwendungslogik
+// ============================================================
+var WiBe = (function() {
+'use strict';
+
+// ============================================================
+// CONSTANTS: NEEDS ASSESSMENT (Handlungsbedarf, Kapitel 3)
+// ============================================================
+var NEEDS = [
+  { id: 'n1', label: 'Einhaltung gesetzlicher Vorgaben',
+    desc: 'K\u00f6nnen geltende oder ge\u00e4nderte Rechtsnormen nicht oder k\u00fcnftig nicht mehr eingehalten werden?' },
+  { id: 'n2', label: 'Datenschutz und Informationssicherheit',
+    desc: 'Gibt es beim Altsystem gravierende Verst\u00f6\u00dfe gegen Regelungen des Datenschutzes und/oder der Informationssicherheit?' },
+  { id: 'n3', label: 'Ordnungsm\u00e4\u00dfigkeit der Arbeitsabl\u00e4ufe',
+    desc: 'Ist die Ordnungsm\u00e4\u00dfigkeit durch das Altsystem nicht gew\u00e4hrleistet?' },
+  { id: 'n4', label: 'Ergonomie und Barrierefreiheit',
+    desc: 'Bestehen beim Altsystem hinsichtlich der Ergonomie und der Barrierefreiheit gravierende M\u00e4ngel?' },
+  { id: 'n5', label: 'Unterst\u00fctzungskontinuit\u00e4t des Altsystems',
+    desc: 'Ist die Unterst\u00fctzungskontinuit\u00e4t des Altsystems gef\u00e4hrdet (z.B. Lieferanten stellen Support ein)?' },
+  { id: 'n6', label: 'Kapazit\u00e4tsbedingte Abl\u00f6sedringlichkeit',
+    desc: 'Sind die Kapazit\u00e4tsgrenzen des Altsystems erreicht?' },
+  { id: 'n7', label: 'Fehler und Ausf\u00e4lle des Altsystems',
+    desc: 'F\u00fchren Fehler und/oder Ausf\u00e4lle zur Gef\u00e4hrdung der Aufgabenerf\u00fcllung?' },
+  { id: 'n8', label: 'Wartungsprobleme und Personalengp\u00e4sse',
+    desc: 'F\u00fchren Wartungsprobleme oder fehlendes Know-how zur Gef\u00e4hrdung der Aufgabenerf\u00fcllung?' },
+  { id: 'n9', label: 'Ausbau- und Erweiterungsgrenzen',
+    desc: 'Sind der erforderliche Ausbau und/oder die Erweiterung zur Aufgabenerf\u00fcllung nicht m\u00f6glich?' },
+  { id: 'n10', label: 'Interoperabilit\u00e4t und Schnittstellenprobleme',
+    desc: 'Ist aufgrund von Interoperabilit\u00e4ts- und Schnittstellenproblemen die Aufgabenerf\u00fcllung gef\u00e4hrdet?' }
+];
+
+// ============================================================
+// CONSTANTS: CRITERIA CATALOG (Kapitel 4+5)
+// ============================================================
+var CRITERIA = [
+  // === GROUP 1: Entwicklungskosten/-nutzen (einmalig) ===
+  // 1.1 Entwicklungskosten
+  { id:'1.1.1.1', g:1, sub:'1.1.1', label:'Personalkosten (eigenes Personal)', type:'monetary', dir:'cost', rec:false,
+    desc:'Eigene Personalkosten f\u00fcr die Planung bis zum Wirkbetrieb. Personentage \u00d7 Personalkostensatz (BMF). Regelm\u00e4\u00dfig nicht haushaltswirksam.' },
+  { id:'1.1.1.2', g:1, sub:'1.1.1', label:'Kosten externer Beratung', type:'monetary', dir:'cost', rec:false,
+    desc:'Externe Beratungskosten f\u00fcr Planung bis Wirkbetrieb (Bruttobetr\u00e4ge inkl. Nebenkosten). Regelm\u00e4\u00dfig haushaltswirksam.' },
+  { id:'1.1.1.3', g:1, sub:'1.1.1', label:'Kosten der Entwicklungsumgebung', type:'monetary', dir:'cost', rec:false,
+    desc:'Hard- und Softwarekosten f\u00fcr das Entwicklerteam w\u00e4hrend der Planungsphase.' },
+  { id:'1.1.1.4', g:1, sub:'1.1.1', label:'Sonstige Kosten f\u00fcr Sach-/Hilfsmittel', type:'monetary', dir:'cost', rec:false,
+    desc:'Zus\u00e4tzliches Material, Hilfsmittel und Ausstattung w\u00e4hrend der Planung.' },
+  { id:'1.1.1.5', g:1, sub:'1.1.1', label:'Reisekosten (eigenes Personal)', type:'monetary', dir:'cost', rec:false,
+    desc:'Reisekosten des eigenen Personals. Regelm\u00e4\u00dfig haushaltswirksam.' },
+  { id:'1.1.2.1.1', g:1, sub:'1.1.2', label:'Hardwarekosten \u2014 Host/Server, Netzbetrieb', type:'monetary', dir:'cost', rec:false,
+    desc:'Investitionskosten f\u00fcr Host, Server und Netzkomponenten.' },
+  { id:'1.1.2.1.2', g:1, sub:'1.1.2', label:'Hardwarekosten \u2014 Arbeitsplatzrechner', type:'monetary', dir:'cost', rec:false,
+    desc:'Investitionskosten f\u00fcr Arbeitsplatz-Hardware.' },
+  { id:'1.1.2.2.1', g:1, sub:'1.1.2', label:'Softwarekosten \u2014 Entwicklung/Beschaffung', type:'monetary', dir:'cost', rec:false,
+    desc:'Kosten f\u00fcr die Entwicklung bzw. Beschaffung von Software (Kern der IT-Ma\u00dfnahme).' },
+  { id:'1.1.2.2.2', g:1, sub:'1.1.2', label:'Softwarekosten \u2014 Anpassung/Schnittstellen', type:'monetary', dir:'cost', rec:false,
+    desc:'Kosten f\u00fcr die Anpassung von Software und/oder Schnittstellen.' },
+  { id:'1.1.2.2.3', g:1, sub:'1.1.2', label:'Softwarekosten \u2014 Evaluierung/Zertifizierung/QS', type:'monetary', dir:'cost', rec:false,
+    desc:'Kosten f\u00fcr Evaluierung, Zertifizierung und Qualit\u00e4tssicherung von Software.' },
+  { id:'1.1.2.3.1', g:1, sub:'1.1.2', label:'Installationskosten \u2014 Bauseitige Kosten', type:'monetary', dir:'cost', rec:false,
+    desc:'Bauseitige Kosten inkl. Klimatisierung.' },
+  { id:'1.1.2.3.2', g:1, sub:'1.1.2', label:'Installationskosten \u2014 Technische Infrastruktur', type:'monetary', dir:'cost', rec:false,
+    desc:'Verlegung technischer Infrastruktur.' },
+  { id:'1.1.2.3.3', g:1, sub:'1.1.2', label:'Installationskosten \u2014 B\u00fcro-/Raumausstattung', type:'monetary', dir:'cost', rec:false,
+    desc:'B\u00fcro-/Raumausstattung und Zubeh\u00f6r.' },
+  { id:'1.1.2.3.4', g:1, sub:'1.1.2', label:'Installationskosten \u2014 Personalkosten Installation', type:'monetary', dir:'cost', rec:false,
+    desc:'Personalkosten der Systeminstallation. \u00dcblicherweise nicht haushaltswirksam.' },
+  { id:'1.1.3.1', g:1, sub:'1.1.3', label:'System- und Integrationstest(s)', type:'monetary', dir:'cost', rec:false,
+    desc:'Kosten f\u00fcr System- und Integrationstests. Evtl. bereits unter 1.1.2 ber\u00fccksichtigt.' },
+  { id:'1.1.3.2', g:1, sub:'1.1.3', label:'\u00dcbernahme von Datenbest\u00e4nden', type:'monetary', dir:'cost', rec:false,
+    desc:'Kosten f\u00fcr die Migration vorhandener Datenbest\u00e4nde.' },
+  { id:'1.1.3.3', g:1, sub:'1.1.3', label:'Erstschulung Anwender und IT-Fachpersonal', type:'monetary', dir:'cost', rec:false,
+    desc:'Schulungskosten (Seminargeb\u00fchren, Dozenten, Nebenkosten = HW; Personalausfallkosten = NHW).' },
+  { id:'1.1.3.4', g:1, sub:'1.1.3', label:'Einarbeitungskosten Anwender/IT-Fachpersonal', type:'monetary', dir:'cost', rec:false,
+    desc:'Verminderte Arbeitsleistung in der \u00dcbergangszeit nach Einf\u00fchrung.' },
+  { id:'1.1.3.5', g:1, sub:'1.1.3', label:'Sonstige Umstellungskosten', type:'monetary', dir:'cost', rec:false,
+    desc:'Weitere Kosten der Umstellung vom alten auf das neue Verfahren.' },
+  // 1.2 Entwicklungsnutzen
+  { id:'1.2.1', g:1, sub:'1.2', label:'Einmalige Kosteneinsparungen', type:'monetary', dir:'benefit', rec:false,
+    desc:'Vermeidbare Investitionen in das Alt-System (Ersatzinvestitionen, Zukauf etc.).' },
+  { id:'1.2.2', g:1, sub:'1.2', label:'Einmalige Erl\u00f6se', type:'monetary', dir:'benefit', rec:false,
+    desc:'Erl\u00f6se aus Verwertung/Abgabe des Altsystems oder Teilen davon.' },
+
+  // === GROUP 2: Betriebskosten/-nutzen (laufend) ===
+  // 2.1 Sachkosten
+  { id:'2.1.1', g:2, sub:'2.1', label:'Leitungs-/Kommunikationskosten', type:'monetary', dir:'both', rec:true,
+    desc:'Netzkosten, Kommunikationsdienste inkl. Wartung und Pflege. NEU = lfd. Kosten neue Ma\u00dfnahme, ALT = Einsparung aus Wegfall.' },
+  { id:'2.1.2', g:2, sub:'2.1', label:'Host- und Serverkosten', type:'monetary', dir:'both', rec:true,
+    desc:'Kalkulatorische Kosten im zentralen Rechenzentrum. Grunds\u00e4tzlich nicht haushaltswirksam.' },
+  { id:'2.1.3', g:2, sub:'2.1', label:'Kosten f\u00fcr Arbeitsplatzrechner', type:'monetary', dir:'both', rec:true,
+    desc:'Ersatz-/Erg\u00e4nzungskosten w\u00e4hrend des Wirkbetriebs.' },
+  { id:'2.1.4', g:2, sub:'2.1', label:'Softwarekosten', type:'monetary', dir:'both', rec:true,
+    desc:'Lizenzen, Lizenzerweiterungen, Wartung, Pflege und Updates im Wirkbetrieb.' },
+  { id:'2.1.5', g:2, sub:'2.1', label:'Verbrauchsmaterial', type:'monetary', dir:'both', rec:true,
+    desc:'Papier, Datentr\u00e4ger, Toner, Farbb\u00e4nder usw.' },
+  { id:'2.1.6', g:2, sub:'2.1', label:'Energie-, Raum- und Klimatisierungskosten', type:'monetary', dir:'both', rec:true,
+    desc:'Mietkosten, Energiekosten f\u00fcr Hardware-Betrieb und Klimatisierung.' },
+  { id:'2.1.7', g:2, sub:'2.1', label:'Kosten externer Unterst\u00fctzung', type:'monetary', dir:'both', rec:true,
+    desc:'Externe Unterst\u00fctzung w\u00e4hrend des Wirkbetriebs.' },
+  { id:'2.1.8', g:2, sub:'2.1', label:'Sonstige Kosten', type:'monetary', dir:'both', rec:true,
+    desc:'Weitere Kosten, z.B. Entsorgungskosten.' },
+  // 2.2 Personalkosten
+  { id:'2.2.1', g:2, sub:'2.2', label:'Personalkosten aus Systembenutzung', type:'monetary', dir:'both', rec:true,
+    desc:'Zeitbedarf der Anwender f\u00fcr Systembenutzung inkl. Ausfallzeiten. Methoden der Personalbedarfsermittlung nach Org.-Handbuch anwenden.' },
+  { id:'2.2.2', g:2, sub:'2.2', label:'Systembetreuung und -administration', type:'monetary', dir:'both', rec:true,
+    desc:'Personalkosten in zentralen Unterst\u00fctzungsstellen (RZ-Betrieb, Benutzerservice).' },
+  { id:'2.2.3', g:2, sub:'2.2', label:'Laufende Schulung/Fortbildung', type:'monetary', dir:'both', rec:true,
+    desc:'Personalkosten f\u00fcr Schulung und Fortbildung im Wirkbetrieb.' },
+
+  // === GROUP 3: Qualitativ-strategische Kriterien (WiBe Q) ===
+  { id:'3.1.1', g:3, label:'Bedeutung f\u00fcr die IT-Strategie der Beh\u00f6rde', type:'qualitative', w:10, key:true,
+    desc:'Bewerten Sie die Bedeutung Ihrer IT-Ma\u00dfnahme f\u00fcr die IT-Strategie. Bei 10 Punkten = Schl\u00fcsselkriterium.',
+    scale: {0:'Nicht von Bedeutung', 2:'Wichtig f\u00fcr einige Fachaufgaben der Beh\u00f6rde, sp\u00e4ter', 4:'Wichtig f\u00fcr einige Fachaufgaben der Beh\u00f6rde, zeitnah', 6:'Wichtig f\u00fcr alle Fachaufgaben der Beh\u00f6rde, sp\u00e4ter', 8:'Wichtig f\u00fcr alle Fachaufgaben der Beh\u00f6rde, zeitnah', 10:'Unabdingbar f\u00fcr die IT-Strategie der Beh\u00f6rde (Schl\u00fcsselkriterium)'} },
+  { id:'3.1.2', g:3, label:'Nachnutzung bereits vorhandener Technologien', type:'qualitative', w:10,
+    desc:'Kommen in der geplanten IT-Ma\u00dfnahme technische L\u00f6sungen zum Einsatz, die sich bereits in anderen Beh\u00f6rden bew\u00e4hrt haben?',
+    scale: {0:'\u00dcbernahme eines Verfahrens nicht m\u00f6glich', 2:'\u00dcbernahme von au\u00dferhalb der \u00f6ffentlichen Verwaltung', 4:'\u00dcbernahme innerhalb der Beh\u00f6rde', 6:'\u00dcbernahme aus dem Gesch\u00e4ftsbereich', 8:'\u00dcbernahme ressort\u00fcbergreifend', 10:'\u00dcbernahme aus der \u00f6ffentlichen Verwaltung (Bund, L\u00e4nder, Kommunen)'} },
+  { id:'3.1.3', g:3, label:'Plattform-/Herstellerunabh\u00e4ngigkeit', type:'qualitative', w:10,
+    desc:'Kann die angestrebte L\u00f6sung k\u00fcnftig auf unterschiedlichen Plattformen eingesetzt werden?',
+    scale: {0:'Keine Plattformunabh\u00e4ngigkeit', 2:'Hardware-unabh\u00e4ngig (1)', 4:'Hardware + Betriebssystem (1-2)', 6:'+ Standardsoftware (1-3)', 8:'+ Infrastruktursoftware (1-4)', 10:'Vollst\u00e4ndige Plattformunabh\u00e4ngigkeit (1-5)'} },
+  { id:'3.2.1', g:3, label:'Qualit\u00e4tsverbesserung bei der Aufgabenabwicklung', type:'qualitative', w:15,
+    desc:'Qualitative Wirkungen auf Arbeitsablauf und Arbeitsergebnis (Transparenz, Vereinfachung, Entlastung von Routinearbeiten).',
+    scale: {0:'Nicht von Bedeutung / keine positiven Wirkungen', 2:'Geringe Verbesserung des Arbeitsablaufs', 4:'Erhebliche Verbesserung des Arbeitsablaufs', 6:'Geringe Verbesserung des Arbeitsergebnisses', 8:'Erhebliche Verbesserung des Arbeitsergebnisses', 10:'Erhebliche Verbesserung des Arbeitsablaufs und des Arbeitsergebnisses'} },
+  { id:'3.2.2', g:3, label:'Verk\u00fcrzung der Durchlaufzeit', type:'qualitative', w:15,
+    desc:'Elektronische Kommunikation, Abbau von Medienbr\u00fcchen, Zugriff auf aktuelle Datenbanken verk\u00fcrzen die Durchlaufzeit.',
+    scale: {0:'Nicht von Bedeutung / keine positiven Wirkungen', 2:'Geringe Verk\u00fcrzung zu erwarten, Effekte nicht einsch\u00e4tzbar', 4:'Verk\u00fcrzung bis zu 20% der bisherigen Durchlaufzeit', 6:'Verk\u00fcrzung bis zu 40% der bisherigen Durchlaufzeit', 8:'Verk\u00fcrzung bis zu 60% der bisherigen Durchlaufzeit', 10:'Verk\u00fcrzung mehr als 60% der bisherigen Durchlaufzeit'} },
+  { id:'3.2.3', g:3, label:'Einheitliches Verwaltungshandeln', type:'qualitative', w:5,
+    desc:'Inwieweit f\u00fchrt die IT-Ma\u00dfnahme zu einheitlichen Standards bei der Vorgangsbearbeitung?',
+    scale: {0:'Nicht von Bedeutung / keine positiven Wirkungen', 2:'Geringe Verbesserung durch beh\u00f6rdeninterne Vereinheitlichung', 4:'Erhebliche Verbesserung durch beh\u00f6rdeninterne Vereinheitlichung', 6:'Verbesserung durch ressortinterne Vereinheitlichung', 8:'Verbesserung durch ressort\u00fcbergreifende Vereinheitlichung', 10:'Verbesserung durch Vereinheitlichung in der \u00f6ffentlichen Verwaltung'} },
+  { id:'3.2.4', g:3, label:'Imageverbesserung', type:'qualitative', w:5,
+    desc:'Kann die IT-Ma\u00dfnahme durch verbesserte Dienstleistungen zur Imageverbesserung beitragen?',
+    scale: {0:'Keine Wirkung', 2:'Geringf\u00fcgige Wirkung', 4:'Tempor\u00e4r positive Wirkung bei wenigen Adressaten', 6:'Tempor\u00e4r positive Wirkung bei vielen Adressaten', 8:'Dauerhaft positive Wirkung bei wenigen Adressaten', 10:'Dauerhaft positive Wirkung bei vielen Adressaten'} },
+  { id:'3.3.1', g:3, label:'Informationsbereitstellung f\u00fcr Entscheidungstr\u00e4ger', type:'qualitative', w:15,
+    desc:'F\u00fchrt die IT-Ma\u00dfnahme zu einer aktuelleren, vollst\u00e4ndigen und problemorientiert aufbereiteten Informationsbasis?',
+    scale: {0:'Keine Bedeutung', 2:'Zeitnahe Informationen', 4:'Neue Informationen in wenigen Bereichen', 6:'Neue Informationen in vielen Bereichen', 8:'Zeitnahe und neue Informationen in wenigen Bereichen', 10:'Zeitnahe und neue Informationen in vielen Bereichen'} },
+  { id:'3.4.1', g:3, label:'Attraktivit\u00e4t der Arbeitsbedingungen', type:'qualitative', w:10,
+    desc:'Kann die IT-Ma\u00dfnahme die Attraktivit\u00e4t des Arbeitsplatzes erh\u00f6hen und Arbeitszufriedenheit f\u00f6rdern?',
+    scale: {0:'Keine Verbesserung / nicht von Bedeutung', 2:'Geringf\u00fcgige Verbesserung in einem Bereich', 4:'Geringf\u00fcgige Verbesserung in wenigen Bereichen', 6:'Geringf\u00fcgige Verbesserung in mehreren Bereichen', 8:'Erhebliche Verbesserung in wenigen Bereichen', 10:'Erhebliche Verbesserung in mehreren Bereichen'} },
+  { id:'3.4.2', g:3, label:'Qualifikationssicherung/-erweiterung', type:'qualitative', w:5,
+    desc:'Hat die IT-Ma\u00dfnahme Einfluss auf die Qualifikation der Anwender (IT-Qualifikation, aufgabenbezogene Kompetenz)?',
+    scale: {0:'Nicht beeinflusst / keine positiven Wirkungen', 2:'Sicherung der IT-Qualifikation', 4:'Erh\u00f6hung der IT-Qualifikation', 6:'Erh\u00f6hung der aufgabenbezogenen Qualifikation', 8:'Erh\u00f6hung der IT- und aufgabenbezogenen Qualifikation', 10:'Erhebliche fachbezogene H\u00f6herqualifikation'} },
+
+  // === GROUP 4: Externe Effekte (WiBe E) ===
+  { id:'4.1.1', g:4, label:'Dringlichkeit aus Nachfrage(-intensit\u00e4t)', type:'qualitative', w:10,
+    desc:'Unmittelbarer zeitlicher Druck zur Abl\u00f6sung des Altsystems aus Sicht des externen Kunden.',
+    scale: {0:'Nicht von Bedeutung', 2:'Abl\u00f6sung w\u00fcnschenswert, kann jedoch sp\u00e4ter erfolgen', 4:'Abl\u00f6sung w\u00fcnschenswert aus Sicht weniger Kunden', 6:'Abl\u00f6sung w\u00fcnschenswert aus Sicht vieler Kunden', 8:'Abl\u00f6sung zwingend aus Sicht weniger Kunden', 10:'Abl\u00f6sung zwingend aus Sicht vieler Kunden'} },
+  { id:'4.2.1', g:4, label:'Realisierung eines einheitlichen Zugangs', type:'qualitative', w:10,
+    desc:'Tr\u00e4gt die IT-Ma\u00dfnahme zur Realisierung eines einheitlichen Zugangs f\u00fcr den externen Adressaten bei?',
+    scale: {0:'Nicht von Bedeutung / keine Unterst\u00fctzung', 2:'Beh\u00f6rdeneinheitlicher Zugang zu wenigen Verfahren', 4:'Bundeseinheitlicher Zugang zu wenigen Verfahren', 6:'Beh\u00f6rdeneinheitlicher Zugang zu vielen Verfahren', 8:'Ressorteinheitlicher Zugang zu vielen Verfahren', 10:'Bundeseinheitlicher Zugang zu vielen Verfahren'} },
+  { id:'4.2.2', g:4, label:'Erh\u00f6hung der Verst\u00e4ndlichkeit und Transparenz', type:'qualitative', w:5,
+    desc:'Beitrag der IT-Ma\u00dfnahme zur Erh\u00f6hung der Verst\u00e4ndlichkeit und Transparenz des Verwaltungshandelns.',
+    scale: {0:'Keine positiven Wirkungen', 2:'Geringe Erh\u00f6hung der Verst\u00e4ndlichkeit und Transparenz', 4:'Wesentliche Erh\u00f6hung der Verst\u00e4ndlichkeit f\u00fcr wenige Kunden', 6:'Wesentliche Erh\u00f6hung der Verst\u00e4ndlichkeit und Transparenz f\u00fcr wenige Kunden', 8:'Wesentliche Erh\u00f6hung der Verst\u00e4ndlichkeit f\u00fcr viele Kunden', 10:'Wesentliche Erh\u00f6hung der Verst\u00e4ndlichkeit und Transparenz f\u00fcr viele Kunden'} },
+  { id:'4.2.3', g:4, label:'Hilfefunktion zur Unterst\u00fctzung des externen Kunden', type:'qualitative', w:5,
+    desc:'Unterst\u00fctzungsfunktionen: Hilfefunktionen, Fehlermeldungen, Plausibilit\u00e4tspr\u00fcfungen, Supportfunktionen.',
+    scale: {0:'Keine Verbesserung der Hilfefunktionen', 2:'Teile einer Unterst\u00fctzungsfunktion', 4:'Eine vollst\u00e4ndige Unterst\u00fctzungsfunktion', 6:'Kombination von zwei Unterst\u00fctzungsfunktionen', 8:'Kombination von drei Unterst\u00fctzungsfunktionen', 10:'Umfassende Unterst\u00fctzungsfunktion'} },
+  { id:'4.2.4', g:4, label:'Zeitnahe und vollst\u00e4ndige Verf\u00fcgbarkeit der Information', type:'qualitative', w:10,
+    desc:'Schafft das neue System Mehrwert durch aktuellere Informationen als das Altsystem? Der Zugriff muss aus dringendem Interesse begr\u00fcndbar sein.',
+    scale: {0:'Nicht von Bedeutung / kein verbesserter Informationszugriff', 2:'Geringer Bedarf an Informationen wird erf\u00fcllt', 4:'Geringer Bedarf an zeitnahen und vollst\u00e4ndigen Informationen wird erf\u00fcllt', 6:'Gro\u00dfer Bedarf an Informationen wird erf\u00fcllt', 8:'Gro\u00dfer Bedarf an zeitnahen Informationen wird erf\u00fcllt', 10:'Gro\u00dfer Bedarf an zeitnahen und vollst\u00e4ndigen Informationen wird erf\u00fcllt'} },
+  { id:'4.3.1', g:4, label:'Wirtschaftlicher Nutzen f\u00fcr den Kunden', type:'qualitative', w:25,
+    desc:'Direkte wirtschaftliche (monet\u00e4re) Vorteile f\u00fcr B\u00fcrger, Unternehmen und andere Beh\u00f6rden (Sachkostenverringerung, Prozessverk\u00fcrzung, Vermeidung von Fehlinvestitionen).',
+    scale: {0:'Nicht von Bedeutung / kein wirtschaftlicher Nutzen', 2:'Geringe Einsparung bei kleinem Adressatenkreis', 4:'Hohe Einsparung bei kleinem Adressatenkreis unmittelbar', 6:'Geringe Einsparung bei gro\u00dfem Adressatenkreis mittelbar', 8:'Hohe Einsparung bei gro\u00dfem Adressatenkreis mittelbar', 10:'Hohe Einsparung bei gro\u00dfem Adressatenkreis unmittelbar'} },
+  { id:'4.4.1', g:4, label:'Folgewirkungen f\u00fcr den Kommunikationspartner', type:'qualitative', w:10,
+    desc:'\u00dcbergreifende Interoperabilit\u00e4t: Je geringer die Auswirkungen des Datenaustauschs f\u00fcr Kommunikationspartner, desto h\u00f6her die Qualit\u00e4t.',
+    scale: {0:'Erheblicher Anpassungsaufwand f\u00fcr viele Kommunikationspartner', 2:'Erheblicher Anpassungsaufwand f\u00fcr wenige Kommunikationspartner', 4:'Geringer Anpassungsaufwand f\u00fcr wenige Kommunikationspartner', 6:'Kein Anpassungsaufwand f\u00fcr wenige Kommunikationspartner', 8:'Geringer Anpassungsaufwand f\u00fcr viele Kommunikationspartner', 10:'Kein Anpassungsaufwand f\u00fcr viele Kommunikationspartner'} },
+  { id:'4.4.2', g:4, label:'Beschleunigung von Verwaltungsentscheidungen f\u00fcr Externe', type:'qualitative', w:10,
+    desc:'Verk\u00fcrzt die IT-Ma\u00dfnahme f\u00fcr externe Kunden die Wartezeit auf Verwaltungsdienstleistungen?',
+    scale: {0:'Nicht von Bedeutung / keine positiven Wirkungen', 2:'Geringe Verk\u00fcrzung, Effekte nicht einsch\u00e4tzbar', 4:'Verk\u00fcrzung bis zu 20% der bisherigen Durchlaufzeit', 6:'Verk\u00fcrzung bis zu 40% der bisherigen Durchlaufzeit', 8:'Verk\u00fcrzung bis zu 60% der bisherigen Durchlaufzeit', 10:'Verk\u00fcrzung mehr als 60% der bisherigen Durchlaufzeit'} },
+  { id:'4.4.3', g:4, label:'Verbesserung/Erweiterung des Dienstleistungsangebotes', type:'qualitative', w:5,
+    desc:'Wird das bestehende Dienstleistungsangebot durch die IT-Ma\u00dfnahme verbessert und/oder erweitert?',
+    scale: {0:'Keine Verbesserung/Erweiterung', 2:'Geringe Verbesserung oder punktuelle Erweiterung f\u00fcr wenige Kunden', 4:'Geringe Verbesserung oder punktuelle Erweiterung f\u00fcr viele Kunden', 6:'Deutliche Verbesserung oder umfassende Erweiterung f\u00fcr wenige Kunden', 8:'Deutliche Verbesserung oder umfassende Erweiterung f\u00fcr viele Kunden', 10:'Deutliche Verbesserung und umfassende Erweiterung f\u00fcr viele Kunden'} },
+  { id:'4.5.1', g:4, label:'Nachnutzung von Projektergebnissen', type:'qualitative', w:10,
+    desc:'Sind die Projektergebnisse (Methoden und Produkte) f\u00fcr eine Nachnutzung geeignet?',
+    scale: {0:'Keine Nachnutzung von Projektergebnissen', 2:'Nachnutzung von Methode oder Programm f\u00fcr die \u00f6ffentl. Verwaltung', 4:'Nachnutzung von Methode oder Programm f\u00fcr Verwaltung, Unternehmen oder B\u00fcrger', 6:'Nachnutzung von Methode oder Programm f\u00fcr Verwaltung, Unternehmen und B\u00fcrger', 8:'Nachnutzung von Methode und Programm f\u00fcr Verwaltung, Unternehmen oder B\u00fcrger', 10:'Nachnutzung von Methode und Programm f\u00fcr Verwaltung, Unternehmen und B\u00fcrger'} }
+];
+
+// Sub-group labels
+var SUB_LABELS = {
+  '1.1.1': 'Planungskosten', '1.1.2': 'Entwicklungs- und Investitionskosten',
+  '1.1.3': 'Kosten der Systemeinf\u00fchrung', '1.2': 'Entwicklungsnutzen',
+  '2.1': 'Laufende Sachkosten/-einsparungen', '2.2': 'Laufende Personalkosten/-einsparungen',
+  '3.1': 'Bedeutung der IT-Ma\u00dfnahme', '3.2': 'Qualit\u00e4tszuwachs bei Fachaufgaben',
+  '3.3': 'Informationen f\u00fcr Entscheidungstr\u00e4ger', '3.4': 'Mitarbeiterbezogene Effekte',
+  '4.1': 'Abl\u00f6sedringlichkeit', '4.2': 'Benutzerfreundlichkeit aus Kundensicht',
+  '4.3': 'Wirtschaftliche Effekte extern', '4.4': 'Qualit\u00e4ts-/Leistungssteigerungen',
+  '4.5': 'Synergien'
+};
+
+var GROUP_LABELS = {
+  1: 'Entwicklungskosten und Entwicklungsnutzen',
+  2: 'Betriebskosten und Betriebsnutzen',
+  3: 'Qualitativ-strategische Kriterien (WiBe Q)',
+  4: 'Externe Effekte (WiBe E)'
+};
+
+var STEP_LABELS = [
+  'Projektdaten', 'Handlungsbedarf', 'Kriterienauswahl',
+  'Monet\u00e4re Daten', 'Qualitative Bewertung', 'Ergebnisse'
+];
+
+// ============================================================
+// STATE
+// ============================================================
+var state = {
+  step: 0,
+  project: {
+    name: '', description: '', organization: '', responsible: '',
+    date: new Date().toISOString().slice(0,10),
+    periodYears: 5, discountRate: 2.0
+  },
+  needs: {},
+  selectedCriteria: [],
+  monetaryData: {},
+  qualitativeData: {},
+  dirty: false
+};
+
+// ============================================================
+// UTILITY FUNCTIONS
+// ============================================================
+function $(sel) { return document.querySelector(sel); }
+function $$(sel) { return Array.from(document.querySelectorAll(sel)); }
+
+var eurFmt = new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+function fmtEur(v) { return eurFmt.format(v) + ' \u20ac'; }
+function fmtNum(v) { return eurFmt.format(v); }
+
+function discountFactor(rate, year) {
+  return 1 / Math.pow(1 + rate / 100, year);
+}
+
+function esc(s) {
+  var d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function saveState() {
+  try { localStorage.setItem('wibe_autosave', JSON.stringify(state)); } catch(e) {}
+  state.dirty = true;
+}
+
+function loadAutoSave() {
+  try {
+    var s = localStorage.getItem('wibe_autosave');
+    if (s) {
+      var parsed = JSON.parse(s);
+      if (parsed && parsed.project) {
+        Object.assign(state, parsed);
+        state.dirty = false;
+        return true;
+      }
+    }
+  } catch(e) {}
+  return false;
+}
+
+function getSelectedMonetary() {
+  return CRITERIA.filter(function(c) {
+    return c.type === 'monetary' && state.selectedCriteria.indexOf(c.id) !== -1;
+  });
+}
+
+function getSelectedQualitative() {
+  return CRITERIA.filter(function(c) {
+    return c.type === 'qualitative' && c.g === 3 && state.selectedCriteria.indexOf(c.id) !== -1;
+  });
+}
+
+function getSelectedExternal() {
+  return CRITERIA.filter(function(c) {
+    return c.type === 'qualitative' && c.g === 4 && state.selectedCriteria.indexOf(c.id) !== -1;
+  });
+}
+
+function initMonetaryData(c) {
+  var n = state.project.periodYears;
+  if (!state.monetaryData[c.id]) {
+    state.monetaryData[c.id] = {};
+  }
+  var d = state.monetaryData[c.id];
+  if (c.rec) {
+    // recurring: NEU and ALT per year
+    if (!d.neu) d.neu = [];
+    if (!d.alt) d.alt = [];
+    if (!d.riskNeu) d.riskNeu = [];
+    if (!d.riskAlt) d.riskAlt = [];
+    for (var i = 0; i < n; i++) {
+      if (!d.neu[i]) d.neu[i] = { hw: 0, nhw: 0 };
+      if (!d.alt[i]) d.alt[i] = { hw: 0, nhw: 0 };
+      if (d.riskNeu[i] === undefined) d.riskNeu[i] = 0;
+      if (d.riskAlt[i] === undefined) d.riskAlt[i] = 0;
+    }
+  } else {
+    // one-time: values per year (typically only first years)
+    if (!d.values) d.values = [];
+    if (!d.risk) d.risk = [];
+    for (var j = 0; j < n; j++) {
+      if (!d.values[j]) d.values[j] = { hw: 0, nhw: 0 };
+      if (d.risk[j] === undefined) d.risk[j] = 0;
+    }
+  }
+}
+
+function initQualData(c) {
+  if (!state.qualitativeData[c.id]) {
+    state.qualitativeData[c.id] = { score: 0, justification: '' };
+  }
+}
+
+// ============================================================
+// CALCULATION ENGINE
+// ============================================================
+function calcKW() {
+  var n = state.project.periodYears;
+  var rate = state.project.discountRate;
+  var yearly = []; // { hw, nhw, hwR, nhwR } per year
+  for (var t = 0; t < n; t++) {
+    yearly.push({ hw: 0, nhw: 0, hwR: 0, nhwR: 0 });
+  }
+
+  getSelectedMonetary().forEach(function(c) {
+    var d = state.monetaryData[c.id];
+    if (!d) return;
+
+    for (var t = 0; t < n; t++) {
+      var hw = 0, nhw = 0, riskPct = 0;
+
+      if (c.rec && d.neu && d.alt) {
+        // Recurring: cost = NEU, benefit = ALT
+        var neuHw = (d.neu[t] ? d.neu[t].hw : 0) || 0;
+        var neuNhw = (d.neu[t] ? d.neu[t].nhw : 0) || 0;
+        var altHw = (d.alt[t] ? d.alt[t].hw : 0) || 0;
+        var altNhw = (d.alt[t] ? d.alt[t].nhw : 0) || 0;
+        // Net = benefit(ALT) - cost(NEU)
+        hw = altHw - neuHw;
+        nhw = altNhw - neuNhw;
+
+        // Risk: apply risk to NEU (cost surcharge) and ALT (benefit discount)
+        var rNeu = (d.riskNeu && d.riskNeu[t]) || 0;
+        var rAlt = (d.riskAlt && d.riskAlt[t]) || 0;
+        var rNeuHw = neuHw * (1 + rNeu / 100);
+        var rNeuNhw = neuNhw * (1 + rNeu / 100);
+        var rAltHw = altHw * (1 - rAlt / 100);
+        var rAltNhw = altNhw * (1 - rAlt / 100);
+        var hwR = rAltHw - rNeuHw;
+        var nhwR = rAltNhw - rNeuNhw;
+
+        yearly[t].hw += hw;
+        yearly[t].nhw += nhw;
+        yearly[t].hwR += hwR;
+        yearly[t].nhwR += nhwR;
+      } else if (d.values) {
+        // One-time
+        var v = d.values[t];
+        hw = (v ? v.hw : 0) || 0;
+        nhw = (v ? v.nhw : 0) || 0;
+        riskPct = (d.risk && d.risk[t]) || 0;
+
+        // Costs are negative, benefits positive in the values
+        var sign = (c.dir === 'cost') ? -1 : 1;
+        hw = sign * Math.abs(hw);
+        nhw = sign * Math.abs(nhw);
+
+        // Risk
+        var hwRisk, nhwRisk;
+        if (c.dir === 'cost') {
+          hwRisk = hw * (1 + riskPct / 100); // more negative
+          nhwRisk = nhw * (1 + riskPct / 100);
+        } else {
+          hwRisk = hw * (1 - riskPct / 100); // less positive
+          nhwRisk = nhw * (1 - riskPct / 100);
+        }
+
+        yearly[t].hw += hw;
+        yearly[t].nhw += nhw;
+        yearly[t].hwR += hwRisk;
+        yearly[t].nhwR += nhwRisk;
+      }
+    }
+  });
+
+  // Discount
+  var kwHw = 0, kwNhw = 0, kwHwR = 0, kwNhwR = 0;
+  var discounted = [];
+  for (var t = 0; t < n; t++) {
+    var df = discountFactor(rate, t);
+    var dHw = yearly[t].hw * df;
+    var dNhw = yearly[t].nhw * df;
+    var dHwR = yearly[t].hwR * df;
+    var dNhwR = yearly[t].nhwR * df;
+    kwHw += dHw;
+    kwNhw += dNhw;
+    kwHwR += dHwR;
+    kwNhwR += dNhwR;
+    discounted.push({
+      hw: dHw, nhw: dNhw, total: dHw + dNhw,
+      hwR: dHwR, nhwR: dNhwR, totalR: dHwR + dNhwR,
+      df: df, raw: yearly[t]
+    });
+  }
+
+  return {
+    kw: kwHw + kwNhw,
+    kwH: kwHw,
+    kwN: kwNhw,
+    kwR: kwHwR + kwNhwR,
+    kwRH: kwHwR,
+    kwRN: kwNhwR,
+    yearly: discounted
+  };
+}
+
+function calcQ() {
+  var total = 0;
+  getSelectedQualitative().forEach(function(c) {
+    var d = state.qualitativeData[c.id];
+    var score = d ? (d.score || 0) : 0;
+    total += c.w * score;
+  });
+  return total / 10; // range 0-100
+}
+
+function calcE() {
+  var total = 0;
+  getSelectedExternal().forEach(function(c) {
+    var d = state.qualitativeData[c.id];
+    var score = d ? (d.score || 0) : 0;
+    total += c.w * score;
+  });
+  return total / 10;
+}
+
+function calcDecision(kw, kwR, q, e) {
+  var s311 = state.qualitativeData['3.1.1'] ? (state.qualitativeData['3.1.1'].score || 0) : 0;
+  var results = [];
+
+  if (kw > 0) {
+    results.push({ type: 'positive', title: 'Monet\u00e4r wirtschaftlich',
+      text: 'Der Kapitalwert ist positiv (' + fmtEur(kw) + '). Die Ma\u00dfnahme ist wirtschaftlich.' });
+    if (kwR > 0) {
+      results.push({ type: 'positive', title: 'Auch unter Risiken wirtschaftlich',
+        text: 'Auch der risikobereinigte Kapitalwert ist positiv (' + fmtEur(kwR) + ').' });
+    } else if (kwR < 0) {
+      results.push({ type: 'conditional', title: 'Risiken beachten',
+        text: 'Der risikobereinigte Kapitalwert ist negativ (' + fmtEur(kwR) + '). Die Eintrittswahrscheinlichkeit der Risiken ist zu ber\u00fccksichtigen.' });
+    }
+  } else {
+    results.push({ type: 'negative', title: 'Monet\u00e4r unwirtschaftlich',
+      text: 'Der Kapitalwert ist negativ (' + fmtEur(kw) + '). Die Ma\u00dfnahme ist monet\u00e4r unwirtschaftlich.' });
+  }
+
+  if (s311 === 10) {
+    results.push({ type: 'positive', title: 'Schl\u00fcsselkriterium erf\u00fcllt',
+      text: 'Kriterium 3.1.1 wurde mit 10 Punkten bewertet. Die IT-Ma\u00dfnahme nimmt eine Schl\u00fcsselstellung in der IT-Strategie ein und kann durchgef\u00fchrt werden. Es ist darzulegen, dass die Alternative mit den geringsten Kosten gew\u00e4hlt wurde.' });
+  }
+
+  if (q > 50) {
+    results.push({ type: 'positive', title: 'Hoher Qualit\u00e4tswert (WiBe Q)',
+      text: 'Der Qualit\u00e4tswert liegt bei ' + q.toFixed(1) + ' (> 50). Die qualitativ-strategische Bedeutung spricht f\u00fcr die Durchf\u00fchrung.' });
+  }
+
+  if (e > 50) {
+    results.push({ type: 'positive', title: 'Hoher Externwert (WiBe E)',
+      text: 'Der Externwert liegt bei ' + e.toFixed(1) + ' (> 50). Die externen Effekte sprechen f\u00fcr die Durchf\u00fchrung.' });
+  }
+
+  // Overall
+  var overall;
+  if (kw > 0 && kwR > 0) {
+    overall = { type: 'positive', title: 'Empfehlung: Ma\u00dfnahme durchf\u00fchren',
+      text: 'Die Ma\u00dfnahme ist sowohl monet\u00e4r als auch unter Ber\u00fccksichtigung von Risiken wirtschaftlich.' };
+  } else if (kw > 0 && kwR <= 0) {
+    overall = { type: 'conditional', title: 'Empfehlung: Bedingt durchf\u00fchren',
+      text: 'Die Ma\u00dfnahme ist monet\u00e4r wirtschaftlich, aber unter Risiken m\u00f6glicherweise nicht. Eine sorgf\u00e4ltige Risikobetrachtung ist erforderlich.' };
+  } else if (kw <= 0 && (s311 === 10 || q > 50 || e > 50)) {
+    overall = { type: 'conditional', title: 'Empfehlung: Durchf\u00fchrung m\u00f6glich mit Begr\u00fcndung',
+      text: 'Die Ma\u00dfnahme ist monet\u00e4r unwirtschaftlich, aber es liegen qualitative Gr\u00fcnde f\u00fcr die Durchf\u00fchrung vor. Eine ausf\u00fchrliche Begr\u00fcndung ist erforderlich.' };
+  } else {
+    overall = { type: 'negative', title: 'Empfehlung: Ma\u00dfnahme nicht durchf\u00fchren',
+      text: 'Die Ma\u00dfnahme ist weder monet\u00e4r wirtschaftlich noch liegen hinreichende qualitative Gr\u00fcnde f\u00fcr die Durchf\u00fchrung vor.' };
+  }
+
+  return { details: results, overall: overall };
+}
+
+// ============================================================
+// RENDERERS
+// ============================================================
+function render() {
+  renderNav();
+  var el = $('#app-content');
+  switch(state.step) {
+    case 0: renderStep0(el); break;
+    case 1: renderStep1(el); break;
+    case 2: renderStep2(el); break;
+    case 3: renderStep3(el); break;
+    case 4: renderStep4(el); break;
+    case 5: renderStep5(el); break;
+  }
+}
+
+function renderNav() {
+  var html = '';
+  for (var i = 0; i < STEP_LABELS.length; i++) {
+    if (i > 0) html += '<span class="wiz-step-arrow">\u25B6</span>';
+    var cls = 'wiz-step';
+    if (i === state.step) cls += ' active';
+    else if (i < state.step) cls += ' completed';
+    html += '<div class="' + cls + '" data-step="' + i + '">';
+    html += '<span class="step-num">' + (i < state.step ? '\u2713' : (i + 1)) + '</span>';
+    html += STEP_LABELS[i] + '</div>';
+  }
+  $('#wizard-nav').innerHTML = html;
+
+  // Bind nav clicks
+  $$('.wiz-step').forEach(function(el) {
+    el.addEventListener('click', function() {
+      var s = parseInt(this.getAttribute('data-step'));
+      if (s <= state.step || s === state.step + 1) {
+        collectCurrentStep();
+        state.step = s;
+        render();
+      }
+    });
+  });
+}
+
+function collectCurrentStep() {
+  switch(state.step) {
+    case 0: collectStep0(); break;
+    case 3: collectStep3(); break;
+    case 4: collectStep4(); break;
+  }
+}
+
+function navButtons(canBack, canNext, nextLabel) {
+  var html = '<div class="nav-buttons">';
+  if (canBack) {
+    html += '<button class="btn btn-secondary" id="btn-back">\u2190 Zur\u00fcck</button>';
+  } else {
+    html += '<span></span>';
+  }
+  if (canNext) {
+    html += '<button class="btn btn-primary" id="btn-next">' + (nextLabel || 'Weiter \u2192') + '</button>';
+  }
+  html += '</div>';
+  return html;
+}
+
+function bindNav() {
+  var back = $('#btn-back');
+  var next = $('#btn-next');
+  if (back) back.addEventListener('click', function() {
+    collectCurrentStep();
+    state.step--;
+    saveState();
+    render();
+  });
+  if (next) next.addEventListener('click', function() {
+    collectCurrentStep();
+    state.step++;
+    saveState();
+    render();
+  });
+}
+
+// ---- STEP 0: Projektdaten ----
+function renderStep0(el) {
+  var p = state.project;
+  el.innerHTML =
+    '<div class="card">' +
+    '<h2>Projektdaten</h2>' +
+    '<p class="help-text">Geben Sie die grundlegenden Informationen zu Ihrem Projekt und der Wirtschaftlichkeitsbetrachtung ein. Der Betrachtungszeitraum und der Kalkulationszinssatz beeinflussen die Berechnung der Barwerte ma\u00dfgeblich.</p>' +
+    '<div class="form-row">' +
+      '<div class="form-group"><label>Projektname *</label><input type="text" id="f-name" value="' + esc(p.name) + '" placeholder="z.B. Einf\u00fchrung DMS"></div>' +
+      '<div class="form-group"><label>Organisation</label><input type="text" id="f-org" value="' + esc(p.organization) + '" placeholder="z.B. BMI"></div>' +
+    '</div>' +
+    '<div class="form-group"><label>Beschreibung</label><textarea id="f-desc" placeholder="Kurze Beschreibung der Ma\u00dfnahme und ihrer Ziele">' + esc(p.description) + '</textarea></div>' +
+    '<div class="form-row">' +
+      '<div class="form-group"><label>Verantwortlich</label><input type="text" id="f-resp" value="' + esc(p.responsible) + '" placeholder="Name/Referat"></div>' +
+      '<div class="form-group"><label>Datum</label><input type="date" id="f-date" value="' + esc(p.date) + '"></div>' +
+    '</div>' +
+    '<div class="form-row">' +
+      '<div class="form-group"><label>Betrachtungszeitraum (Jahre) <span class="info-tip" data-tip="Zeitraum, auf den sich die WiBe bezieht. Mindestens so lang, bis die gesetzten Ziele erreichbar sind. F\u00fcr alle Alternativen gleich.">?</span></label>' +
+        '<input type="number" id="f-period" value="' + p.periodYears + '" min="1" max="15" step="1"></div>' +
+      '<div class="form-group"><label>Kalkulationszinssatz (%) <span class="info-tip" data-tip="Vom BMF j\u00e4hrlich ver\u00f6ffentlichter Zinssatz f\u00fcr die Abzinsung. Standard: ca. 2%.">?</span></label>' +
+        '<input type="number" id="f-rate" value="' + p.discountRate + '" min="0" max="15" step="0.1"></div>' +
+    '</div>' +
+    '</div>' +
+    navButtons(false, true);
+  bindNav();
+}
+
+function collectStep0() {
+  var p = state.project;
+  var el;
+  el = $('#f-name'); if (el) p.name = el.value;
+  el = $('#f-org'); if (el) p.organization = el.value;
+  el = $('#f-desc'); if (el) p.description = el.value;
+  el = $('#f-resp'); if (el) p.responsible = el.value;
+  el = $('#f-date'); if (el) p.date = el.value;
+  el = $('#f-period'); if (el) p.periodYears = Math.max(1, Math.min(15, parseInt(el.value) || 5));
+  el = $('#f-rate'); if (el) p.discountRate = Math.max(0, parseFloat(el.value) || 0);
+}
+
+// ---- STEP 1: Handlungsbedarf ----
+function renderStep1(el) {
+  var html = '<div class="card">' +
+    '<h2>Handlungsbedarf</h2>' +
+    '<p class="help-text">Beurteilen Sie, ob und wann Handlungsbedarf besteht. Diese Aspekte dienen der Dokumentation und Begr\u00fcndung der Ma\u00dfnahme gem\u00e4\u00df Kapitel 3 des WiBe-Fachkonzepts.</p>';
+
+  NEEDS.forEach(function(n) {
+    var val = state.needs[n.id];
+    html += '<div class="toggle-group">' +
+      '<div><div class="toggle-label">' + esc(n.label) + '</div>' +
+      '<div class="toggle-desc">' + esc(n.desc) + '</div></div>' +
+      '<div class="toggle-btns">' +
+        '<button data-need="' + n.id + '" data-val="ja" class="' + (val === 'ja' ? 'active-yes' : '') + '">Ja</button>' +
+        '<button data-need="' + n.id + '" data-val="nein" class="' + (val === 'nein' ? 'active-no' : '') + '">Nein</button>' +
+      '</div></div>';
+  });
+
+  var count = Object.values(state.needs).filter(function(v) { return v === 'ja'; }).length;
+  html += '<div class="running-total"><span>Handlungsbedarf festgestellt:</span><span>' + count + ' von ' + NEEDS.length + ' Aspekten</span></div>';
+  html += '</div>' + navButtons(true, true);
+  el.innerHTML = html;
+
+  // Bind toggles
+  $$('.toggle-btns button').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var needId = this.getAttribute('data-need');
+      var val = this.getAttribute('data-val');
+      state.needs[needId] = val;
+      saveState();
+      renderStep1(el);
+    });
+  });
+  bindNav();
+}
+
+// ---- STEP 2: Kriterienauswahl ----
+function renderStep2(el) {
+  // Initialize selected criteria with defaults (all G3 and G4)
+  if (state.selectedCriteria.length === 0) {
+    CRITERIA.forEach(function(c) {
+      if (c.g === 3 || c.g === 4) {
+        state.selectedCriteria.push(c.id);
+      }
+    });
+  }
+
+  var html = '<div class="card">' +
+    '<h2>Kriterienauswahl</h2>' +
+    '<p class="help-text">W\u00e4hlen Sie die f\u00fcr Ihre Ma\u00dfnahme relevanten Kriterien aus dem generellen Kriterienkatalog. Gruppen 3 und 4 (qualitativ) sind standardm\u00e4\u00dfig vollst\u00e4ndig ausgew\u00e4hlt. W\u00e4hlen Sie bei den monet\u00e4ren Gruppen 1 und 2 nur die tats\u00e4chlich relevanten Kriterien.</p>';
+
+  [1, 2, 3, 4].forEach(function(g) {
+    var items = CRITERIA.filter(function(c) { return c.g === g; });
+    var selCount = items.filter(function(c) { return state.selectedCriteria.indexOf(c.id) !== -1; }).length;
+
+    html += '<div class="criteria-group">' +
+      '<div class="criteria-group-header" data-group="' + g + '">' +
+      '<span>Gruppe ' + g + ': ' + GROUP_LABELS[g] + '</span>' +
+      '<span class="badge">' + selCount + '/' + items.length + '</span></div>' +
+      '<div class="criteria-actions">' +
+        '<button class="btn btn-sm btn-secondary sel-all" data-group="' + g + '">Alle ausw\u00e4hlen</button>' +
+        '<button class="btn btn-sm btn-secondary sel-none" data-group="' + g + '">Keine ausw\u00e4hlen</button>' +
+      '</div>';
+
+    // Group by sub
+    var subs = {};
+    items.forEach(function(c) {
+      var s = c.sub || c.id.substring(0, 3);
+      if (!subs[s]) subs[s] = [];
+      subs[s].push(c);
+    });
+
+    Object.keys(subs).sort().forEach(function(s) {
+      if (SUB_LABELS[s]) {
+        html += '<div style="padding: 0.3rem 0.8rem 0.1rem 1.2rem; font-size:0.82rem; font-weight:600; color:#004B87;">' + s + ' ' + SUB_LABELS[s] + '</div>';
+      }
+      subs[s].forEach(function(c) {
+        var checked = state.selectedCriteria.indexOf(c.id) !== -1 ? ' checked' : '';
+        html += '<div class="criteria-item">' +
+          '<input type="checkbox" id="cr-' + c.id + '" data-cid="' + c.id + '"' + checked + '>' +
+          '<span class="crit-id">' + c.id + '</span>' +
+          '<label for="cr-' + c.id + '">' + esc(c.label) + '</label></div>';
+      });
+    });
+
+    html += '</div>';
+  });
+
+  html += '</div>' + navButtons(true, true);
+  el.innerHTML = html;
+
+  // Bind checkboxes
+  $$('.criteria-item input[type="checkbox"]').forEach(function(cb) {
+    cb.addEventListener('change', function() {
+      var cid = this.getAttribute('data-cid');
+      if (this.checked) {
+        if (state.selectedCriteria.indexOf(cid) === -1) state.selectedCriteria.push(cid);
+      } else {
+        state.selectedCriteria = state.selectedCriteria.filter(function(id) { return id !== cid; });
+      }
+      saveState();
+      renderStep2(el);
+    });
+  });
+
+  // Select all / none
+  $$('.sel-all').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var g = parseInt(this.getAttribute('data-group'));
+      CRITERIA.filter(function(c) { return c.g === g; }).forEach(function(c) {
+        if (state.selectedCriteria.indexOf(c.id) === -1) state.selectedCriteria.push(c.id);
+      });
+      saveState();
+      renderStep2(el);
+    });
+  });
+  $$('.sel-none').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var g = parseInt(this.getAttribute('data-group'));
+      var ids = CRITERIA.filter(function(c) { return c.g === g; }).map(function(c) { return c.id; });
+      state.selectedCriteria = state.selectedCriteria.filter(function(id) { return ids.indexOf(id) === -1; });
+      saveState();
+      renderStep2(el);
+    });
+  });
+
+  bindNav();
+}
+
+// ---- STEP 3: Monetäre Dateneingabe ----
+var monetaryTab = 0;
+
+function renderStep3(el) {
+  var selected = getSelectedMonetary();
+  if (selected.length === 0) {
+    el.innerHTML = '<div class="card"><h2>Monet\u00e4re Dateneingabe</h2>' +
+      '<p class="help-text">Sie haben keine monet\u00e4ren Kriterien ausgew\u00e4hlt. Gehen Sie zur\u00fcck zum Schritt "Kriterienauswahl" und w\u00e4hlen Sie Kriterien der Gruppen 1 und/oder 2 aus.</p></div>' +
+      navButtons(true, true);
+    bindNav();
+    return;
+  }
+
+  // Init data
+  selected.forEach(function(c) { initMonetaryData(c); });
+
+  // Build tabs: Group 1 vs Group 2
+  var groups = [];
+  var g1 = selected.filter(function(c) { return c.g === 1; });
+  var g2 = selected.filter(function(c) { return c.g === 2; });
+  if (g1.length > 0) groups.push({ label: 'Gr. 1: Entwicklung', items: g1 });
+  if (g2.length > 0) groups.push({ label: 'Gr. 2: Betrieb', items: g2 });
+
+  if (monetaryTab >= groups.length) monetaryTab = 0;
+
+  var html = '<div class="card"><h2>Monet\u00e4re Dateneingabe</h2>' +
+    '<p class="help-text">Geben Sie die Kosten und Nutzen in Euro ein. Alle Betr\u00e4ge werden getrennt nach haushaltswirksam (HW) und nicht haushaltswirksam (NHW) erfasst. Bei Gruppe 2 geben Sie die laufenden Kosten der neuen Ma\u00dfnahme (NEU) und die Einsparungen durch Wegfall des Altsystems (ALT) separat an. Optional k\u00f6nnen Sie Risikozuschl\u00e4ge in % angeben.</p>';
+
+  // Tab bar
+  if (groups.length > 1) {
+    html += '<div class="tab-bar">';
+    groups.forEach(function(g, i) {
+      html += '<button class="tab-btn' + (i === monetaryTab ? ' active' : '') + '" data-mtab="' + i + '">' + g.label + '</button>';
+    });
+    html += '</div>';
+  }
+
+  var curGroup = groups[monetaryTab];
+  var n = state.project.periodYears;
+  var startYear = parseInt(state.project.date.substring(0,4)) || new Date().getFullYear();
+
+  if (curGroup.items[0] && curGroup.items[0].rec) {
+    // Recurring (Group 2): NEU/ALT table
+    html += renderRecurringTable(curGroup.items, n, startYear);
+  } else {
+    // One-time (Group 1)
+    html += renderOneTimeTable(curGroup.items, n, startYear);
+  }
+
+  html += '</div>' + navButtons(true, true);
+  el.innerHTML = html;
+
+  // Bind tab clicks
+  $$('.tab-btn[data-mtab]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      collectStep3();
+      monetaryTab = parseInt(this.getAttribute('data-mtab'));
+      renderStep3(el);
+    });
+  });
+
+  // Bind inputs
+  $$('.monetary-table input[type="number"]').forEach(function(inp) {
+    inp.addEventListener('change', function() {
+      collectStep3();
+      saveState();
+    });
+  });
+
+  bindNav();
+}
+
+function renderOneTimeTable(items, n, startYear) {
+  var html = '<div class="monetary-table-wrap"><table class="monetary-table"><thead><tr><th class="row-label">Kriterium</th><th>Typ</th>';
+  for (var t = 0; t < n; t++) {
+    html += '<th>Jahr ' + (t + 1) + '<br><small>' + (startYear + t) + '</small></th>';
+  }
+  html += '<th>Risiko %</th></tr></thead><tbody>';
+
+  items.forEach(function(c) {
+    var d = state.monetaryData[c.id];
+    if (!d || !d.values) return;
+    // HW row
+    html += '<tr><td class="row-label" rowspan="2">' + esc(c.id + ' ' + c.label) + '</td>' +
+      '<td class="sub-label">HW</td>';
+    for (var t = 0; t < n; t++) {
+      var v = d.values[t] ? d.values[t].hw : 0;
+      html += '<td><input type="number" step="0.01" data-cid="' + c.id + '" data-t="' + t + '" data-f="hw" value="' + (v || '') + '"></td>';
+    }
+    html += '<td rowspan="2"><input type="number" class="risk-input" step="1" min="0" max="100" data-cid="' + c.id + '" data-f="risk" value="' + ((d.risk && d.risk[0]) || '') + '"></td>';
+    html += '</tr>';
+    // NHW row
+    html += '<tr><td class="sub-label">NHW</td>';
+    for (var t2 = 0; t2 < n; t2++) {
+      var v2 = d.values[t2] ? d.values[t2].nhw : 0;
+      html += '<td><input type="number" step="0.01" data-cid="' + c.id + '" data-t="' + t2 + '" data-f="nhw" value="' + (v2 || '') + '"></td>';
+    }
+    html += '</tr>';
+  });
+
+  html += '</tbody></table></div>';
+  return html;
+}
+
+function renderRecurringTable(items, n, startYear) {
+  var html = '<div class="monetary-table-wrap"><table class="monetary-table"><thead><tr><th class="row-label">Kriterium</th><th>Typ</th>';
+  for (var t = 0; t < n; t++) {
+    html += '<th>Jahr ' + (t + 1) + '<br><small>' + (startYear + t) + '</small></th>';
+  }
+  html += '<th>Risiko %</th></tr></thead><tbody>';
+
+  items.forEach(function(c) {
+    var d = state.monetaryData[c.id];
+    if (!d) return;
+    // NEU HW
+    html += '<tr><td class="row-label" rowspan="4">' + esc(c.id + ' ' + c.label) + '</td>' +
+      '<td class="sub-label">NEU HW</td>';
+    for (var t = 0; t < n; t++) {
+      var v = (d.neu && d.neu[t]) ? d.neu[t].hw : 0;
+      html += '<td><input type="number" step="0.01" data-cid="' + c.id + '" data-t="' + t + '" data-src="neu" data-f="hw" value="' + (v || '') + '"></td>';
+    }
+    html += '<td rowspan="2"><input type="number" class="risk-input" step="1" min="0" max="100" data-cid="' + c.id + '" data-f="riskNeu" value="' + ((d.riskNeu && d.riskNeu[0]) || '') + '"><br><small>NEU</small></td></tr>';
+    // NEU NHW
+    html += '<tr><td class="sub-label">NEU NHW</td>';
+    for (var t2 = 0; t2 < n; t2++) {
+      var v2 = (d.neu && d.neu[t2]) ? d.neu[t2].nhw : 0;
+      html += '<td><input type="number" step="0.01" data-cid="' + c.id + '" data-t="' + t2 + '" data-src="neu" data-f="nhw" value="' + (v2 || '') + '"></td>';
+    }
+    html += '</tr>';
+    // ALT HW
+    html += '<tr><td class="sub-label">ALT HW</td>';
+    for (var t3 = 0; t3 < n; t3++) {
+      var v3 = (d.alt && d.alt[t3]) ? d.alt[t3].hw : 0;
+      html += '<td><input type="number" step="0.01" data-cid="' + c.id + '" data-t="' + t3 + '" data-src="alt" data-f="hw" value="' + (v3 || '') + '"></td>';
+    }
+    html += '<td rowspan="2"><input type="number" class="risk-input" step="1" min="0" max="100" data-cid="' + c.id + '" data-f="riskAlt" value="' + ((d.riskAlt && d.riskAlt[0]) || '') + '"><br><small>ALT</small></td></tr>';
+    // ALT NHW
+    html += '<tr><td class="sub-label">ALT NHW</td>';
+    for (var t4 = 0; t4 < n; t4++) {
+      var v4 = (d.alt && d.alt[t4]) ? d.alt[t4].nhw : 0;
+      html += '<td><input type="number" step="0.01" data-cid="' + c.id + '" data-t="' + t4 + '" data-src="alt" data-f="nhw" value="' + (v4 || '') + '"></td>';
+    }
+    html += '</tr>';
+  });
+
+  html += '</tbody></table></div>';
+  return html;
+}
+
+function collectStep3() {
+  $$('.monetary-table input[type="number"]').forEach(function(inp) {
+    var cid = inp.getAttribute('data-cid');
+    if (!cid) return;
+    var d = state.monetaryData[cid];
+    if (!d) return;
+    var f = inp.getAttribute('data-f');
+    var t = parseInt(inp.getAttribute('data-t'));
+    var src = inp.getAttribute('data-src');
+    var val = parseFloat(inp.value) || 0;
+
+    if (f === 'risk') {
+      // one-time risk (apply same % to all years)
+      if (d.risk) {
+        for (var i = 0; i < d.risk.length; i++) d.risk[i] = val;
+      }
+    } else if (f === 'riskNeu') {
+      if (d.riskNeu) {
+        for (var i2 = 0; i2 < d.riskNeu.length; i2++) d.riskNeu[i2] = val;
+      }
+    } else if (f === 'riskAlt') {
+      if (d.riskAlt) {
+        for (var i3 = 0; i3 < d.riskAlt.length; i3++) d.riskAlt[i3] = val;
+      }
+    } else if (src && d[src] && !isNaN(t)) {
+      if (!d[src][t]) d[src][t] = { hw: 0, nhw: 0 };
+      d[src][t][f] = val;
+    } else if (d.values && !isNaN(t)) {
+      if (!d.values[t]) d.values[t] = { hw: 0, nhw: 0 };
+      d.values[t][f] = val;
+    }
+  });
+}
+
+// ---- STEP 4: Qualitative Bewertung ----
+var qualTab = 0;
+
+function renderStep4(el) {
+  var selQ = getSelectedQualitative();
+  var selE = getSelectedExternal();
+
+  if (selQ.length === 0 && selE.length === 0) {
+    el.innerHTML = '<div class="card"><h2>Qualitative Bewertung</h2>' +
+      '<p class="help-text">Sie haben keine qualitativen Kriterien ausgew\u00e4hlt. Gehen Sie zur\u00fcck zum Schritt "Kriterienauswahl".</p></div>' +
+      navButtons(true, true);
+    bindNav();
+    return;
+  }
+
+  // Init data
+  selQ.concat(selE).forEach(function(c) { initQualData(c); });
+
+  var html = '<div class="card"><h2>Qualitative Bewertung</h2>' +
+    '<p class="help-text">Bewerten Sie jedes Kriterium auf einer Skala von 0 bis 10. Die Beschreibungen helfen bei der Einordnung. Nicht relevante Kriterien erhalten den Punktwert 0. Eine Begr\u00fcndung ist f\u00fcr jedes bewertete Kriterium erforderlich.</p>';
+
+  // Tabs
+  var tabs = [];
+  if (selQ.length > 0) tabs.push({ label: 'WiBe Q \u2014 Qualitativ-strategisch', items: selQ, prefix: 'q' });
+  if (selE.length > 0) tabs.push({ label: 'WiBe E \u2014 Externe Effekte', items: selE, prefix: 'e' });
+  if (qualTab >= tabs.length) qualTab = 0;
+
+  if (tabs.length > 1) {
+    html += '<div class="tab-bar">';
+    tabs.forEach(function(t, i) {
+      html += '<button class="tab-btn' + (i === qualTab ? ' active' : '') + '" data-qtab="' + i + '">' + t.label + '</button>';
+    });
+    html += '</div>';
+  }
+
+  var curTab = tabs[qualTab];
+  curTab.items.forEach(function(c) {
+    var d = state.qualitativeData[c.id];
+    var score = d ? d.score : 0;
+    var just = d ? d.justification : '';
+    var isKey = c.key ? ' key-criterion' : '';
+
+    html += '<div class="qual-criterion' + isKey + '">' +
+      '<div class="qual-header">' +
+      '<div><span class="qual-id">' + c.id + '</span> <span class="qual-title">' + esc(c.label) + '</span>' +
+      (c.key ? '<span class="key-badge">Schl\u00fcsselkriterium</span>' : '') +
+      '</div>' +
+      '<span class="qual-weight">Gewicht: ' + c.w + '</span></div>' +
+      '<div class="qual-desc">' + esc(c.desc) + '</div>';
+
+    // Scale description for current score
+    if (c.scale) {
+      var scaleText = getScaleDesc(c.scale, score);
+      html += '<div class="scale-desc"><strong>' + score + ' Punkte:</strong> ' + esc(scaleText) + '</div>';
+    }
+
+    html += '<div class="score-row">' +
+      '<label>Bewertung:</label>' +
+      '<input type="range" min="0" max="10" step="1" value="' + score + '" data-cid="' + c.id + '" class="qual-slider">' +
+      '<span class="score-val">' + score + '</span>' +
+      '<span class="weighted-val">(' + (c.w * score / 10).toFixed(1) + ' gewichtet)</span>' +
+      '</div>';
+
+    html += '<textarea data-cid="' + c.id + '" class="qual-just" placeholder="Begr\u00fcndung der Bewertung\u2026">' + esc(just) + '</textarea>';
+    html += '</div>';
+  });
+
+  // Running total
+  var totalW = 0, maxW = 0;
+  curTab.items.forEach(function(c) {
+    var d = state.qualitativeData[c.id];
+    var sc = d ? d.score : 0;
+    totalW += c.w * sc;
+    maxW += c.w * 10;
+  });
+  var valLabel = curTab.prefix === 'q' ? 'Qualit\u00e4tswert' : 'Externwert';
+  html += '<div class="running-total"><span>' + valLabel + ':</span><span>' + (totalW / 10).toFixed(1) + ' / ' + (maxW / 10).toFixed(1) + '</span></div>';
+
+  html += '</div>' + navButtons(true, true);
+  el.innerHTML = html;
+
+  // Bind tab clicks
+  $$('.tab-btn[data-qtab]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      collectStep4();
+      qualTab = parseInt(this.getAttribute('data-qtab'));
+      renderStep4(el);
+    });
+  });
+
+  // Bind sliders
+  $$('.qual-slider').forEach(function(slider) {
+    slider.addEventListener('input', function() {
+      var cid = this.getAttribute('data-cid');
+      var val = parseInt(this.value);
+      if (!state.qualitativeData[cid]) state.qualitativeData[cid] = { score: 0, justification: '' };
+      state.qualitativeData[cid].score = val;
+      // Update display without full re-render
+      var row = this.closest('.score-row');
+      row.querySelector('.score-val').textContent = val;
+      var c = CRITERIA.find(function(cr) { return cr.id === cid; });
+      if (c) {
+        row.querySelector('.weighted-val').textContent = '(' + (c.w * val / 10).toFixed(1) + ' gewichtet)';
+        // Update scale description
+        var scaleDiv = this.closest('.qual-criterion').querySelector('.scale-desc');
+        if (scaleDiv && c.scale) {
+          scaleDiv.innerHTML = '<strong>' + val + ' Punkte:</strong> ' + esc(getScaleDesc(c.scale, val));
+        }
+      }
+      // Update running total
+      updateQualTotal(el);
+      saveState();
+    });
+  });
+
+  // Bind justification
+  $$('.qual-just').forEach(function(ta) {
+    ta.addEventListener('change', function() {
+      var cid = this.getAttribute('data-cid');
+      if (!state.qualitativeData[cid]) state.qualitativeData[cid] = { score: 0, justification: '' };
+      state.qualitativeData[cid].justification = this.value;
+      saveState();
+    });
+  });
+
+  bindNav();
+}
+
+function getScaleDesc(scale, score) {
+  // Find the closest even number at or below score
+  var keys = Object.keys(scale).map(Number).sort(function(a, b) { return a - b; });
+  var best = keys[0];
+  for (var i = 0; i < keys.length; i++) {
+    if (keys[i] <= score) best = keys[i];
+  }
+  return scale[best] || '';
+}
+
+function updateQualTotal(el) {
+  var tabs = [];
+  var selQ = getSelectedQualitative();
+  var selE = getSelectedExternal();
+  if (selQ.length > 0) tabs.push({ items: selQ, prefix: 'q' });
+  if (selE.length > 0) tabs.push({ items: selE, prefix: 'e' });
+  if (qualTab >= tabs.length) return;
+  var curTab = tabs[qualTab];
+  var totalW = 0, maxW = 0;
+  curTab.items.forEach(function(c) {
+    var d = state.qualitativeData[c.id];
+    var sc = d ? d.score : 0;
+    totalW += c.w * sc;
+    maxW += c.w * 10;
+  });
+  var rt = el.querySelector('.running-total');
+  if (rt) {
+    var valLabel = curTab.prefix === 'q' ? 'Qualit\u00e4tswert' : 'Externwert';
+    rt.innerHTML = '<span>' + valLabel + ':</span><span>' + (totalW / 10).toFixed(1) + ' / ' + (maxW / 10).toFixed(1) + '</span>';
+  }
+}
+
+function collectStep4() {
+  $$('.qual-slider').forEach(function(slider) {
+    var cid = slider.getAttribute('data-cid');
+    if (!state.qualitativeData[cid]) state.qualitativeData[cid] = { score: 0, justification: '' };
+    state.qualitativeData[cid].score = parseInt(slider.value) || 0;
+  });
+  $$('.qual-just').forEach(function(ta) {
+    var cid = ta.getAttribute('data-cid');
+    if (!state.qualitativeData[cid]) state.qualitativeData[cid] = { score: 0, justification: '' };
+    state.qualitativeData[cid].justification = ta.value;
+  });
+}
+
+// ---- STEP 5: Ergebnisse ----
+function renderStep5(el) {
+  var kwResult = calcKW();
+  var q = calcQ();
+  var e = calcE();
+  var decision = calcDecision(kwResult.kw, kwResult.kwR, q, e);
+  var n = state.project.periodYears;
+  var startYear = parseInt(state.project.date.substring(0,4)) || new Date().getFullYear();
+
+  var html = '';
+
+  // Print header
+  html += '<div class="print-section card"><h2>' + esc(state.project.name || 'WiBe 5.0') + '</h2>' +
+    '<p>' + esc(state.project.organization) + ' | ' + esc(state.project.date) + ' | Betrachtungszeitraum: ' + n + ' Jahre | Zinssatz: ' + state.project.discountRate + '%</p></div>';
+
+  // Summary cards
+  html += '<div class="results-grid">';
+  html += resultCard('WiBe KW', kwResult.kw, 'Kapitalwert',
+    'HW: ' + fmtEur(kwResult.kwH) + ' | NHW: ' + fmtEur(kwResult.kwN));
+  html += resultCard('WiBe KW/R', kwResult.kwR, 'Kapitalwert mit Risiko',
+    'HW: ' + fmtEur(kwResult.kwRH) + ' | NHW: ' + fmtEur(kwResult.kwRN));
+  html += resultCard('WiBe Q', q, 'Qualit\u00e4tswert', q > 50 ? '> 50: Durchf\u00fchrung unterst\u00fctzt' : '\u2264 50', true);
+  html += resultCard('WiBe E', e, 'Externwert', e > 50 ? '> 50: Durchf\u00fchrung unterst\u00fctzt' : '\u2264 50', true);
+  html += '</div>';
+
+  // Overall decision
+  html += '<div class="decision-box ' + decision.overall.type + '">' +
+    '<h3>' + decision.overall.title + '</h3>' +
+    '<p>' + decision.overall.text + '</p></div>';
+
+  // Detail decisions
+  decision.details.forEach(function(d) {
+    html += '<div class="decision-box ' + d.type + '" style="margin-bottom:0.5rem; padding:0.8rem;">' +
+      '<strong>' + d.title + '</strong> \u2014 ' + d.text + '</div>';
+  });
+
+  // Yearly NPV table
+  html += '<div class="card"><h3>Barwertberechnung nach Jahren</h3>' +
+    '<p class="help-text">Abzinsungsfaktor: d = 1/(1+' + state.project.discountRate + '/100)^t</p>' +
+    '<div class="monetary-table-wrap"><table class="detail-table"><thead><tr><th></th>';
+  for (var t = 0; t < n; t++) {
+    html += '<th>Jahr ' + (t + 1) + '<br>' + (startYear + t) + '</th>';
+  }
+  html += '<th>Gesamt</th></tr></thead><tbody>';
+
+  // Discount factors row
+  html += '<tr><td>Abzinsungsfaktor</td>';
+  for (var t1 = 0; t1 < n; t1++) {
+    html += '<td>' + discountFactor(state.project.discountRate, t1).toFixed(4) + '</td>';
+  }
+  html += '<td></td></tr>';
+
+  // Raw values
+  html += '<tr><td>Cashflow (vor Abzinsung)</td>';
+  var totalRaw = 0;
+  for (var t2 = 0; t2 < n; t2++) {
+    var r = kwResult.yearly[t2].raw;
+    var rawT = r.hw + r.nhw;
+    totalRaw += rawT;
+    html += '<td>' + fmtNum(rawT) + '</td>';
+  }
+  html += '<td class="total-row">' + fmtNum(totalRaw) + '</td></tr>';
+
+  // Discounted
+  html += '<tr><td>Barwert (abgezinst)</td>';
+  var totalDisc = 0;
+  for (var t3 = 0; t3 < n; t3++) {
+    totalDisc += kwResult.yearly[t3].total;
+    html += '<td>' + fmtNum(kwResult.yearly[t3].total) + '</td>';
+  }
+  html += '<td class="total-row">' + fmtNum(totalDisc) + '</td></tr>';
+
+  // HW
+  html += '<tr><td>\u00a0\u00a0davon haushaltswirksam</td>';
+  var totalHw = 0;
+  for (var t4 = 0; t4 < n; t4++) {
+    totalHw += kwResult.yearly[t4].hw;
+    html += '<td>' + fmtNum(kwResult.yearly[t4].hw) + '</td>';
+  }
+  html += '<td class="total-row">' + fmtNum(totalHw) + '</td></tr>';
+
+  // NHW
+  html += '<tr><td>\u00a0\u00a0davon nicht haushaltswirksam</td>';
+  var totalNhw = 0;
+  for (var t5 = 0; t5 < n; t5++) {
+    totalNhw += kwResult.yearly[t5].nhw;
+    html += '<td>' + fmtNum(kwResult.yearly[t5].nhw) + '</td>';
+  }
+  html += '<td class="total-row">' + fmtNum(totalNhw) + '</td></tr>';
+
+  html += '</tbody></table></div></div>';
+
+  // Bar chart
+  html += '<div class="card"><h3>J\u00e4hrliche Barwerte</h3>' +
+    '<div class="bar-chart-container"><canvas id="bar-chart"></canvas></div></div>';
+
+  // Qualitative scores bars
+  html += '<div class="card"><h3>Qualitative Bewertungen</h3>';
+  html += '<h4 style="color:#004B87; margin:0.5rem 0;">WiBe Q \u2014 Qualit\u00e4tswert: ' + q.toFixed(1) + '</h4>';
+  getSelectedQualitative().forEach(function(c) {
+    var d = state.qualitativeData[c.id];
+    var sc = d ? d.score : 0;
+    html += scoreBar(c.id + ' ' + c.label, sc, 10, c.w);
+  });
+
+  html += '<h4 style="color:#004B87; margin:1rem 0 0.5rem;">WiBe E \u2014 Externwert: ' + e.toFixed(1) + '</h4>';
+  getSelectedExternal().forEach(function(c) {
+    var d = state.qualitativeData[c.id];
+    var sc = d ? d.score : 0;
+    html += scoreBar(c.id + ' ' + c.label, sc, 10, c.w);
+  });
+  html += '</div>';
+
+  html += navButtons(true, false);
+  el.innerHTML = html;
+
+  // Draw bar chart
+  drawBarChart(kwResult, n, startYear);
+  bindNav();
+}
+
+function resultCard(label, value, sub, extra, isScore) {
+  var cls = 'result-card';
+  if (isScore) {
+    cls += value > 50 ? ' positive' : (value > 30 ? ' neutral' : ' negative');
+  } else {
+    cls += value > 0 ? ' positive' : (value === 0 ? ' neutral' : ' negative');
+  }
+  var valCls = isScore ? '' : (value >= 0 ? ' pos' : ' neg');
+  var display = isScore ? value.toFixed(1) : fmtEur(value);
+  return '<div class="' + cls + '">' +
+    '<div class="rc-label">' + label + '</div>' +
+    '<div class="rc-value' + valCls + '">' + display + '</div>' +
+    '<div class="rc-sub">' + sub + '</div>' +
+    (extra ? '<div class="rc-sub">' + extra + '</div>' : '') + '</div>';
+}
+
+function scoreBar(label, score, max, weight) {
+  var pct = (score / max * 100);
+  var cls = pct >= 60 ? 'good' : (pct >= 30 ? 'mid' : 'low');
+  return '<div class="score-bar-wrap">' +
+    '<div class="score-bar-label"><span>' + esc(label) + '</span><span>' + score + '/' + max + ' (Gew. ' + weight + ')</span></div>' +
+    '<div class="score-bar-track"><div class="score-bar-fill ' + cls + '" style="width:' + pct + '%"></div></div></div>';
+}
+
+function drawBarChart(kwResult, n, startYear) {
+  var canvas = $('#bar-chart');
+  if (!canvas) return;
+  var ctx = canvas.getContext('2d');
+  var dpr = window.devicePixelRatio || 1;
+  var w = canvas.parentElement.clientWidth;
+  var h = 300;
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  canvas.style.width = w + 'px';
+  canvas.style.height = h + 'px';
+  ctx.scale(dpr, dpr);
+
+  var values = kwResult.yearly.map(function(y) { return y.total; });
+  var maxVal = Math.max.apply(null, values.map(Math.abs).concat([1]));
+
+  var pad = { top: 30, right: 20, bottom: 40, left: 80 };
+  var plotW = w - pad.left - pad.right;
+  var plotH = h - pad.top - pad.bottom;
+  var barW = plotW / n * 0.6;
+  var gap = plotW / n * 0.4;
+  var zeroY = pad.top + plotH / 2;
+
+  // Axes
+  ctx.strokeStyle = '#dee2e6';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(pad.left, pad.top);
+  ctx.lineTo(pad.left, h - pad.bottom);
+  ctx.lineTo(w - pad.right, h - pad.bottom);
+  ctx.stroke();
+
+  // Zero line
+  ctx.strokeStyle = '#6c757d';
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath();
+  ctx.moveTo(pad.left, zeroY);
+  ctx.lineTo(w - pad.right, zeroY);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Bars
+  for (var i = 0; i < n; i++) {
+    var x = pad.left + i * (barW + gap) + gap / 2;
+    var barH = (values[i] / maxVal) * (plotH / 2);
+    var y = zeroY - barH;
+    if (barH < 0) { y = zeroY; barH = -barH; }
+
+    ctx.fillStyle = values[i] >= 0 ? '#006341' : '#C8102E';
+    ctx.fillRect(x, y, barW, barH);
+
+    // Value label
+    ctx.fillStyle = '#1a1a1a';
+    ctx.font = '11px Segoe UI, Arial';
+    ctx.textAlign = 'center';
+    var labelY = values[i] >= 0 ? y - 5 : y + barH + 14;
+    ctx.fillText(fmtNum(values[i]), x + barW / 2, labelY);
+
+    // Year label
+    ctx.fillStyle = '#6c757d';
+    ctx.fillText((startYear + i).toString(), x + barW / 2, h - pad.bottom + 18);
+  }
+
+  // Y-axis labels
+  ctx.fillStyle = '#6c757d';
+  ctx.font = '11px Segoe UI, Arial';
+  ctx.textAlign = 'right';
+  ctx.fillText(fmtNum(maxVal), pad.left - 5, pad.top + 5);
+  ctx.fillText('0', pad.left - 5, zeroY + 4);
+  ctx.fillText(fmtNum(-maxVal), pad.left - 5, h - pad.bottom);
+}
+
+// ============================================================
+// EXPORT / IMPORT
+// ============================================================
+function exportJSON() {
+  collectCurrentStep();
+  var data = JSON.stringify(state, null, 2);
+  var blob = new Blob([data], { type: 'application/json' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = (state.project.name || 'wibe-projekt').replace(/[^a-zA-Z0-9\u00c4\u00e4\u00d6\u00f6\u00dc\u00fc\u00df_-]/g, '_') + '.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function importJSON() {
+  var fileInput = $('#file-import');
+  fileInput.value = '';
+  fileInput.onchange = function() {
+    var file = fileInput.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+      try {
+        var parsed = JSON.parse(ev.target.result);
+        if (!parsed.project || !parsed.project.name === undefined) {
+          alert('Ung\u00fcltige WiBe-Datei: Projektdaten fehlen.');
+          return;
+        }
+        Object.assign(state, parsed);
+        state.step = 0;
+        saveState();
+        render();
+      } catch(e) {
+        alert('Fehler beim Laden der Datei: ' + e.message);
+      }
+    };
+    reader.readAsText(file);
+  };
+  fileInput.click();
+}
+
+// ============================================================
+// INITIALIZATION
+// ============================================================
+function init() {
+  var restored = loadAutoSave();
+  if (restored && state.project.name) {
+    // Auto-save found — continue from saved state
+  }
+  render();
+}
+
+// ============================================================
+// START
+// ============================================================
+init();
+
+// Public API
+return {
+  exportJSON: exportJSON,
+  importJSON: importJSON
+};
+
+})();
+</script>
+
+</body>
+</html>
